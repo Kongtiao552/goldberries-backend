@@ -23,9 +23,9 @@ $query = "SELECT
     total
   FROM (
     SELECT 
-      c.id as challenge_id,
+      c.id AS challenge_id,
       $select_str,
-      COUNT(*) as total
+      COUNT(*) AS total
     FROM stamp_submission ss
     JOIN submission s ON s.id = ss.submission_id
     JOIN challenge c ON c.id = s.challenge_id
