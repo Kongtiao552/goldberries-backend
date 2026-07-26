@@ -346,7 +346,7 @@ $MAP_ABBREVIATIONS = [
     "id" => 2303,
   ],
   [
-    "abbreviation" => ["cotv"],
+    "abbreviation" => ["cotv", "vtoc", "votc"],
     "id" => 2314,
   ],
   [
@@ -1147,7 +1147,7 @@ $MAP_ABBREVIATIONS = [
   ],
   [
     "abbreviation" => ["mg+"],
-    "id" => 1681,
+    "id" => 3891,
   ],
   [
     "abbreviation" => ["pinkle"],
@@ -1644,5 +1644,65 @@ $MAP_ABBREVIATIONS = [
   [
     "abbreviation" => ["ctsf"],
     "id" => 8206,
+  ],
+  [
+    "abbreviation" => ["wower", "twt"],
+    "id" => 3311,
+  ],
+  [
+    "abbreviation" => ["cobd"],
+    "id" => 4398,
+  ],
+  [
+    "abbreviation" => ["blophen"],
+    "id" => 8230,
+  ],
+  [
+    "abbreviation" => ["twt"],
+    "id" => 5607,
+  ],
+  [
+    "abbreviation" => ["bbc"],
+    "id" => 7004,
+  ],
+  [
+    "abbreviation" => ["rits", "arits"],
+    "id" => 6472,
+  ],
+  [
+    "abbreviation" => ["nacg"],
+    "id" => 5598,
+  ],
+  [
+    "abbreviation" => ["sdm"],
+    "id" => 2705,
+  ],
+  [
+    "abbreviation" => ["raegv"],
+    "id" => 4909,
+  ],
+  [
+    "abbreviation" => ["pndcm"],
+    "id" => 8098,
+  ],
+  [
+    "abbreviation" => ["jilogy"],
+    "id" => 3271,
+  ],
+  [
+    "abbreviation" => ["sfc"],
+    "id" => 4190,
+  ],
+  [
+    "abbreviation" => ["mgw"],
+    "id" => 2625,
+  ],
+  [
+    "abbreviation" => ["9e"],
+    "id" => 8503,
+  ],
+  [
+    "abbreviation" => ["gell"],
+    "id" => 8016,
   ]
 ];
