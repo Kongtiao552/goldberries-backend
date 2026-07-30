@@ -51,6 +51,15 @@
       "name": "Change"
     },
     {
+      "name": "Post"
+    },
+    {
+      "name": "Server Settings"
+    },
+    {
+      "name": "Stamp"
+    },
+    {
       "name": "Showcase"
     },
     {
@@ -1020,8 +1029,24 @@
             "in": "query",
             "description": "The ID of the campaign to retrieve.",
             "required": true,
+            "style": "form",
+            "explode": true,
             "schema": {
-              "type": "integer"
+              "oneOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                },
+                {
+                  "type": "string",
+                  "enum": ["all"]
+                }
+              ]
             }
           },
           {
@@ -1046,6 +1071,24 @@
             "description": "Whether to include submissions in the response",
             "schema": {
               "type": "boolean"
+            }
+          },
+          {
+            "name": "empty",
+            "in": "query",
+            "description": "When `id=all`, whether to include campaigns with no challenges.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "rejected",
+            "in": "query",
+            "description": "Whether to include rejected challenges when nested data is fetched.",
+            "schema": {
+              "type": "boolean",
+              "default": false
             }
           }
         ],
@@ -1160,6 +1203,248 @@
         ]
       }
     },
+    "/campaign/data": {
+      "get": {
+        "summary": "Retrieve cached campaign data",
+        "tags": ["Campaign"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Campaign ID.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cached campaign index data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignDataIndex"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid campaign ID."
+          },
+          "404": {
+            "description": "Campaign data not found."
+          },
+          "500": {
+            "description": "Failed to read campaign data."
+          }
+        }
+      },
+      "post": {
+        "summary": "Replace cached campaign data",
+        "tags": ["Campaign"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Campaign ID.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Campaign data replaced successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignDataMutationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid campaign ID, empty body, or invalid JSON body."
+          },
+          "401": {
+            "description": "Not logged in."
+          },
+          "403": {
+            "description": "Helper access is required."
+          },
+          "404": {
+            "description": "Campaign not found."
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Remove cached campaign data",
+        "tags": ["Campaign"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Campaign ID.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Campaign data removed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignDataMutationResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in."
+          },
+          "403": {
+            "description": "Helper access is required."
+          },
+          "404": {
+            "description": "Campaign data not found."
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/campaign/find-by-gb-url": {
+      "get": {
+        "summary": "Find campaigns by GameBanana URL",
+        "tags": ["Campaign"],
+        "parameters": [
+          {
+            "name": "gamebanana_url",
+            "in": "query",
+            "required": true,
+            "description": "GameBanana URL in the form `https://gamebanana.com/mods/<id>` or `https://gamebanana.com/wips/<id>`.",
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matching campaigns, ordered by name.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Campaign"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid GameBanana URL."
+          },
+          "500": {
+            "description": "Failed to search campaigns."
+          }
+        }
+      }
+    },
+    "/campaign/paginated": {
+      "get": {
+        "summary": "Retrieve paginated campaigns with optional search and sorting",
+        "tags": ["Campaign"],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number, clamped to at least 1.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "Number of rows per page, from 1 to 1000.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 50
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Filters by campaign name, map name, challenge label, or GameBanana author name.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "A valid campaign, map, challenge, difficulty, or objective view column, such as `campaign_name` or `map_sort_order`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort_dir",
+            "in": "query",
+            "description": "Sort direction.",
+            "schema": {
+              "type": "string",
+              "enum": ["asc", "desc"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A paginated list of campaigns.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedCampaigns"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid sort or sort direction."
+          }
+        }
+      }
+    },
     "/campaign/view": {
       "get": {
         "summary": "Retrieve detailed campaign view",
@@ -1272,7 +1557,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful response. Result is an objective with `map_id => map object`",
+            "description": "Successful response. The result is an object keyed by map ID, with each value containing the map's challenges and this player's verified submissions.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1304,7 +1589,21 @@
             "description": "The ID of the map to retrieve.",
             "required": true,
             "schema": {
-              "type": "integer"
+              "oneOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                },
+                {
+                  "type": "string",
+                  "enum": ["all"]
+                }
+              ]
             }
           },
           {
@@ -1323,6 +1622,24 @@
             "required": false,
             "schema": {
               "type": "boolean"
+            }
+          },
+          {
+            "name": "rejected",
+            "in": "query",
+            "description": "Whether rejected challenges should be included when `challenges=true`.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "other_maps",
+            "in": "query",
+            "description": "Whether to include the other maps in the map's campaign when `challenges=true`.",
+            "schema": {
+              "type": "boolean",
+              "default": false
             }
           }
         ],
@@ -1460,6 +1777,254 @@
         ]
       }
     },
+    "/map/data": {
+      "get": {
+        "summary": "Retrieve cached campaign data for a map",
+        "tags": ["Map"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "Map ID. Use either `id` or `bin_path`.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "bin_path",
+            "in": "query",
+            "description": "Map binary path, with `.bin` appended when omitted. Use either `bin_path` or `id`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "campaign_id",
+            "in": "query",
+            "description": "Campaign ID. Required with `bin_path` when the path is not uniquely associated with a map; otherwise inferred from the map.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "check_exists",
+            "in": "query",
+            "description": "When `true`, check for cached data without returning the cached document.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The cached map data, or an existence response when `check_exists=true`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/MapDataExistsResponse"
+                    },
+                    {
+                      "description": "The raw cached map-data JSON document. Its shape is determined by the map-data converter."
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid `id`, `bin_path`, or `campaign_id`."
+          },
+          "404": {
+            "description": "Map or cached map data not found."
+          },
+          "500": {
+            "description": "Failed to read cached map data."
+          }
+        }
+      },
+      "post": {
+        "summary": "Create or replace cached map data",
+        "tags": ["Map"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "Map ID. Use either `id` or `bin_path`.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "bin_path",
+            "in": "query",
+            "description": "Map binary path, with `.bin` appended when omitted. Use either `bin_path` or `id`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "campaign_id",
+            "in": "query",
+            "description": "Campaign ID. Required when uploading by `bin_path`; inferred from the map when uploading by `id`.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "description": "Converted map-data JSON document."
+              }
+            },
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary",
+                "description": "Raw `.bin` data, converted by the API before caching."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Map data cached successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MapDataMutationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid map selector, campaign ID, or request body."
+          },
+          "401": {
+            "description": "Not logged in."
+          },
+          "403": {
+            "description": "Helper access is required."
+          },
+          "404": {
+            "description": "Map or cached map data not found."
+          },
+          "502": {
+            "description": "Raw `.bin` data could not be converted to JSON."
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Delete cached map data",
+        "tags": ["Map"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "Map ID. Use either `id` or `bin_path`.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "bin_path",
+            "in": "query",
+            "description": "Map binary path, with `.bin` appended when omitted. Use either `bin_path` or `id`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "campaign_id",
+            "in": "query",
+            "description": "Campaign ID. Required when deleting by `bin_path`; inferred from the map when deleting by `id`.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Map data deleted successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MapDataMutationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid map selector or campaign ID."
+          },
+          "401": {
+            "description": "Not logged in."
+          },
+          "403": {
+            "description": "Helper access is required."
+          },
+          "404": {
+            "description": "Map or cached map data not found."
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/map/find-by-bin-path": {
+      "get": {
+        "summary": "Find maps by their binary path",
+        "tags": ["Map"],
+        "parameters": [
+          {
+            "name": "bin",
+            "in": "query",
+            "required": true,
+            "description": "Map binary path, with `.bin` appended when omitted.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Maps matching the binary path, with related objects expanded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Map"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid `bin` parameter."
+          }
+        }
+      }
+    },
     "/map/rejected": {
       "get": {
         "summary": "Retrieve all rejected maps",
@@ -1491,7 +2056,21 @@
             "in": "query",
             "required": true,
             "schema": {
-              "type": "integer"
+              "oneOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                },
+                {
+                  "type": "string",
+                  "enum": ["all"]
+                }
+              ]
             },
             "description": "The ID of the challenge to retrieve."
           },
@@ -1506,11 +2085,12 @@
           {
             "name": "depth",
             "in": "query",
+            "deprecated": true,
             "schema": {
               "type": "integer",
               "default": 3
             },
-            "description": "The depth of foreign key expansion."
+            "description": "Ignored. Foreign-key expansion is fixed at depth 3."
           }
         ],
         "responses": {
@@ -1544,7 +2124,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Challenge"
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/Challenge"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChallengeSpecialAction"
+                  }
+                ]
               }
             }
           }
@@ -1559,6 +2146,18 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid challenge data or special-action parameters."
+          },
+          "401": {
+            "description": "Not logged in."
+          },
+          "403": {
+            "description": "Helper access is required."
+          },
+          "404": {
+            "description": "Referenced challenge, campaign, or map was not found."
           }
         },
         "security": [
@@ -1591,6 +2190,18 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Missing or invalid challenge ID."
+          },
+          "401": {
+            "description": "Not logged in."
+          },
+          "403": {
+            "description": "Helper access is required, and API-key authentication is rejected."
+          },
+          "404": {
+            "description": "Challenge not found."
           }
         },
         "security": [
@@ -1598,6 +2209,154 @@
             "api_key": []
           }
         ]
+      }
+    },
+    "/challenge/like": {
+      "get": {
+        "summary": "Retrieve likes for a challenge",
+        "tags": ["Challenge"],
+        "parameters": [
+          {
+            "name": "challenge_id",
+            "in": "query",
+            "required": true,
+            "description": "Challenge ID.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Likes for the challenge, newest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Like"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid challenge ID."
+          },
+          "404": {
+            "description": "Challenge not found."
+          }
+        }
+      },
+      "post": {
+        "summary": "Create or update a challenge like",
+        "tags": ["Challenge"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Like"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Like created or updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Like"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid like data, duplicate like, or invalid wishlist fields."
+          },
+          "401": {
+            "description": "Not logged in."
+          },
+          "403": {
+            "description": "You may update only your own like unless you are a verifier."
+          },
+          "404": {
+            "description": "Like or challenge not found."
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Delete a challenge like",
+        "tags": ["Challenge"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Like ID.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Like deleted successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Like"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid like ID."
+          },
+          "401": {
+            "description": "Not logged in."
+          },
+          "403": {
+            "description": "You may delete only your own like unless you are a verifier."
+          },
+          "404": {
+            "description": "Like not found."
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/challenge/rejected": {
+      "get": {
+        "summary": "Retrieve all rejected challenges",
+        "tags": ["Challenge"],
+        "responses": {
+          "200": {
+            "description": "A list of rejected challenges with all submissions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Challenge"
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/challenge/paginated": {
@@ -1619,6 +2378,8 @@
             "in": "query",
             "schema": {
               "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
               "default": 50
             },
             "description": "The number of challenges per page."
@@ -1637,7 +2398,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Field to sort challenges by (e.g., 'date_created', 'label')."
+            "description": "A valid campaign, map, challenge, difficulty, or objective view column, such as `campaign_name` or `challenge_date_created`."
           },
           {
             "name": "sort_dir",
@@ -1651,11 +2412,12 @@
           {
             "name": "depth",
             "in": "query",
+            "deprecated": true,
             "schema": {
               "type": "integer",
               "default": 3
             },
-            "description": "The depth of foreign key expansion."
+            "description": "Ignored. Foreign-key expansion is fixed at depth 3."
           }
         ],
         "responses": {
@@ -1866,9 +2628,23 @@
             "in": "query",
             "required": true,
             "schema": {
-              "type": "integer"
+              "oneOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                },
+                {
+                  "type": "string",
+                  "enum": ["all"]
+                }
+              ]
             },
-            "description": "The ID of the player to retrieve."
+            "description": "The player ID, an array of player IDs, or `all`."
           },
           {
             "name": "customization",
@@ -1885,10 +2661,26 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Player"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Player"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Player"
+                      }
+                    }
+                  ]
                 }
               }
             }
+          },
+          "400": {
+            "description": "Missing or invalid player selector."
+          },
+          "404": {
+            "description": "Player ID does not exist."
           }
         }
       },
@@ -1990,18 +2782,61 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "players": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Player"
-                      }
-                    }
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Player"
                   }
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/player/get-likes": {
+      "get": {
+        "tags": ["Player"],
+        "summary": "Retrieve likes for a player",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "player_id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "The ID of the player whose likes should be retrieved."
+          },
+          {
+            "in": "query",
+            "name": "wishlist_only",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "When `true`, return only wishlist entries."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The player's likes, sorted by the most recently updated or created entry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Like"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid `player_id`."
+          },
+          "404": {
+            "description": "Player not found."
           }
         }
       }
@@ -2017,7 +2852,7 @@
             "required": true,
             "schema": {
               "type": "string",
-              "enum": ["user", "verifier", "admin", "suspended", "unclaimed"]
+              "enum": ["user", "helper", "verifier", "admin", "suspended", "unclaimed", "all"]
             },
             "description": "The group of players to retrieve."
           }
@@ -2059,28 +2894,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Player statistics including count by difficulty",
+            "description": "Verified, non-obsolete submission statistics and account creation date for the player.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "count_by_difficulty": {
-                      "type": "object",
-                      "additionalProperties": {
-                        "type": "integer"
-                      },
-                      "description": "A mapping of difficulty IDs to the count of submissions."
-                    },
-                    "count_total_hard_list": {
-                      "type": "integer",
-                      "description": "Total count of tiered submissions."
-                    },
-                    "count_total_standard_list": {
-                      "type": "integer",
-                      "description": "Total count of standard submissions."
-                    }
-                  }
+                  "$ref": "#/components/schemas/PlayerStatsResponse"
                 }
               }
             }
@@ -2112,7 +2930,7 @@
               "type": "boolean",
               "default": false
             },
-            "description": "Whether to include archived maps in the results."
+            "description": "Include archived maps. When omitted or `false`, archived maps are excluded."
           },
           {
             "in": "query",
@@ -2121,7 +2939,7 @@
               "type": "boolean",
               "default": false
             },
-            "description": "Whether to include arbitrary challenges in the results."
+            "description": "Include arbitrary objectives and challenges. When omitted or `false`, they are excluded."
           }
         ],
         "responses": {
@@ -2154,9 +2972,23 @@
             "name": "id",
             "required": true,
             "schema": {
-              "type": "integer"
+              "oneOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                },
+                {
+                  "type": "string",
+                  "enum": ["all"]
+                }
+              ]
             },
-            "description": "The ID of the objective to retrieve, or \"all\" to retrieve all objectives."
+            "description": "The objective ID, an array of objective IDs, or `all`."
           }
         ],
         "responses": {
@@ -2201,7 +3033,7 @@
               "type": "string",
               "enum": ["campaign", "player"]
             },
-            "description": "Type of the filter. Use \"campaign\" to filter by campaign ID or \"player\" to filter by player ID."
+            "description": "Optional filter type. Omit it to return counts for all submissions; use `campaign` or `player` only together with `id`."
           },
           {
             "in": "query",
@@ -2209,7 +3041,8 @@
             "schema": {
               "type": "integer",
               "description": "The ID of the campaign or player to filter by."
-            }
+            },
+            "description": "Campaign or player ID. Required when `type` is supplied."
           }
         ],
         "responses": {
@@ -2228,7 +3061,7 @@
             }
           },
           "400": {
-            "description": "Invalid or missing `type` or `id` parameter"
+            "description": "A filter type was supplied without a positive ID, or the filter type is invalid."
           }
         }
       }
@@ -2243,7 +3076,21 @@
             "name": "id",
             "required": true,
             "schema": {
-              "type": "integer"
+              "oneOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                },
+                {
+                  "type": "string",
+                  "enum": ["all"]
+                }
+              ]
             },
             "description": "The ID of the difficulty to retrieve. Use \"all\" to retrieve all difficulties."
           }
@@ -2254,16 +3101,26 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Difficulty"
-                  }
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Difficulty"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Difficulty"
+                      }
+                    }
+                  ]
                 }
               }
             }
           },
           "400": {
             "description": "Invalid or missing `id` parameter."
+          },
+          "404": {
+            "description": "Difficulty ID does not exist."
           }
         }
       }
@@ -2622,6 +3479,9 @@
           "403": {
             "description": "Not authorized to delete the change."
           },
+          "401": {
+            "description": "Not logged in or API-key authentication is not accepted for this operation."
+          },
           "404": {
             "description": "Change not found."
           }
@@ -2664,6 +3524,8 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
               "default": 50
             },
             "description": "The number of changes to retrieve per page."
@@ -2682,6 +3544,267 @@
           },
           "400": {
             "description": "Invalid or missing parameters."
+          }
+        }
+      }
+    },
+    "/post": {
+      "get": {
+        "tags": ["Post"],
+        "summary": "Retrieve a post or list of posts",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                {
+                  "type": "string",
+                  "enum": ["all"]
+                }
+              ]
+            },
+            "description": "A post ID, an array of post IDs, or `all`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A post or list of posts with authors expanded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Post"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Post"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid post selector."
+          },
+          "404": {
+            "description": "A requested post does not exist."
+          }
+        }
+      },
+      "post": {
+        "tags": ["Post"],
+        "summary": "Create or update a post",
+        "description": "Creates a post when `id` is omitted and updates an existing post when `id` is provided. The author, creation date, and post type cannot be changed during an update. Changelog posts require Admin access; other posts require News Writer access.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The created or updated post.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Post"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in."
+          },
+          "403": {
+            "description": "News Writer access is required; changelog operations require Admin access."
+          },
+          "404": {
+            "description": "The post to update does not exist."
+          },
+          "500": {
+            "description": "The post could not be saved."
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["Post"],
+        "summary": "Delete a post",
+        "description": "Deletes a post. News Writers and Helpers may delete only posts created within the last 24 hours; changelog posts require Admin access. API-key authentication is rejected for this operation.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "The ID of the post to delete."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The deleted post.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Post"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid post ID."
+          },
+          "401": {
+            "description": "Not logged in."
+          },
+          "403": {
+            "description": "News Writer access is required, or the post cannot be deleted under the role and age rules."
+          },
+          "404": {
+            "description": "Post not found."
+          },
+          "500": {
+            "description": "The post could not be deleted."
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/post/adjacent": {
+      "get": {
+        "tags": ["Post"],
+        "summary": "Retrieve the adjacent posts",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "The ID of the post whose previous and next posts should be retrieved."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The previous and next post of the same type, when present.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostAdjacentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid post ID."
+          },
+          "404": {
+            "description": "Post not found."
+          }
+        }
+      }
+    },
+    "/post/paginated": {
+      "get": {
+        "tags": ["Post"],
+        "summary": "Retrieve paginated posts",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["news", "changelog"]
+            },
+            "description": "The post type to retrieve."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "description": "The page number."
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 15
+            },
+            "description": "The number of posts per page."
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Optional case-insensitive substring filter applied to post titles and content."
+          },
+          {
+            "name": "author_id",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Optional player ID of the post author."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Posts sorted by creation date descending with pagination metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedPosts"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid post type."
           }
         }
       }
@@ -2739,7 +3862,7 @@
         },
         "responses": {
           "200": {
-            "description": "Successfully updated the player showcase submissions. Returned array will be cleaned of invalid and unallowed submissions.",
+            "description": "Successfully updated the current player's showcase. Duplicate IDs are removed and at most 10 verified submissions are stored; the returned array contains the accepted submissions.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2752,10 +3875,10 @@
             }
           },
           "400": {
-            "description": "Missing or invalid submission IDs."
+            "description": "The request body is not an array of submission IDs."
           },
           "403": {
-            "description": "Unauthorized to update showcase submissions."
+            "description": "The account is not allowed to update the showcase, or a submission is unverified or belongs to another player."
           },
           "404": {
             "description": "Submission not found."
@@ -2766,6 +3889,297 @@
             "api_key": []
           }
         ]
+      }
+    },
+    "/server-settings": {
+      "get": {
+        "tags": ["Server Settings"],
+        "summary": "Retrieve server settings",
+        "responses": {
+          "200": {
+            "description": "The singleton server settings record.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerSettings"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Server Settings"],
+        "summary": "Update server settings",
+        "description": "Updates the singleton server settings record. The server always writes record ID 1, even when the request includes another or no ID.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServerSettings"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated server settings.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in."
+          },
+          "403": {
+            "description": "Admin access is required."
+          },
+          "500": {
+            "description": "The server settings could not be updated."
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["Server Settings"],
+        "summary": "Delete server settings",
+        "description": "This operation is not supported.",
+        "responses": {
+          "405": {
+            "description": "Method not allowed."
+          }
+        }
+      }
+    },
+    "/stamp": {
+      "get": {
+        "tags": ["Stamp"],
+        "summary": "Retrieve stamp submissions",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                {
+                  "type": "string",
+                  "enum": ["all"]
+                }
+              ]
+            },
+            "description": "A stamp-submission ID, an array of IDs, or `all`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A stamp submission or list of stamp submissions with linked objects expanded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/StampSubmission"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/StampSubmission"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid stamp-submission selector."
+          },
+          "404": {
+            "description": "A requested stamp submission does not exist."
+          }
+        }
+      },
+      "post": {
+        "tags": ["Stamp"],
+        "summary": "Create a stamp submission",
+        "description": "Creates a stamp submission. The player is derived from the referenced submission and the assignment date is generated by the server. Helper access is required.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StampSubmissionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The created stamp submission.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StampSubmission"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The referenced submission was not found."
+          },
+          "401": {
+            "description": "Not logged in."
+          },
+          "403": {
+            "description": "Helper access is required."
+          },
+          "500": {
+            "description": "The stamp submission could not be created."
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["Stamp"],
+        "summary": "Delete a stamp submission",
+        "description": "Deletes a stamp submission. Helper access is required.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "The ID of the stamp submission to delete."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stamp submission deleted successfully."
+          },
+          "400": {
+            "description": "Missing or invalid stamp-submission ID."
+          },
+          "401": {
+            "description": "Not logged in."
+          },
+          "403": {
+            "description": "Helper access is required."
+          },
+          "404": {
+            "description": "Stamp submission not found."
+          },
+          "500": {
+            "description": "The stamp submission could not be deleted."
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/stamp/get-for-player": {
+      "get": {
+        "tags": ["Stamp"],
+        "summary": "Retrieve a player's stamp submissions",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "The ID of the player."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The player's stamp submissions, ordered by assignment date descending.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StampSubmission"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid player ID."
+          },
+          "404": {
+            "description": "Player not found."
+          }
+        }
+      }
+    },
+    "/stamp/list-stats": {
+      "get": {
+        "tags": ["Stamp"],
+        "summary": "Retrieve stamp statistics by player",
+        "parameters": [
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["name", "total_tier", "stamp_count", "avg_tier"],
+              "default": "name"
+            },
+            "description": "The field used to sort the results. Name sorts ascending; numeric fields sort descending."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stamp totals and tier statistics for each player with a stamp submission.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StampListStat"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid sort parameter."
+          }
+        }
       }
     },
     "/lists/golden-list": {
@@ -2819,7 +4233,7 @@
             "schema": {
               "type": "boolean"
             },
-            "description": "Filter for submissions with challenge difficulty less than 18."
+            "description": "Filter for submissions with difficulty sort at least 4. The flag is enabled by its presence."
           },
           {
             "in": "query",
@@ -2827,7 +4241,7 @@
             "schema": {
               "type": "boolean"
             },
-            "description": "Filter for submissions with challenge difficulty equal to 18."
+            "description": "Filter for standard-list submissions with difficulty sort from 1 through 3. The flag is enabled by its presence."
           },
           {
             "in": "query",
@@ -2835,23 +4249,25 @@
             "schema": {
               "type": "boolean"
             },
-            "description": "Filter for submissions with challenge difficulty equal to 19."
+            "description": "Filter for submissions with undetermined difficulty (difficulty ID 19). The flag is enabled by its presence."
           },
           {
             "in": "query",
             "name": "archived",
             "schema": {
-              "type": "boolean"
+              "type": "boolean",
+              "default": false
             },
-            "description": "Filter for non-archived maps (default is false)."
+            "description": "Include archived maps. When omitted or `false`, archived maps are excluded."
           },
           {
             "in": "query",
             "name": "arbitrary",
             "schema": {
-              "type": "boolean"
+              "type": "boolean",
+              "default": false
             },
-            "description": "Filter for non-arbitrary objectives and challenges (default is false)."
+            "description": "Include arbitrary objectives and challenges. When omitted or `false`, they are excluded."
           }
         ],
         "responses": {
@@ -2911,21 +4327,119 @@
           },
           {
             "in": "query",
+            "name": "undetermined",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            },
+            "description": "Include undetermined-difficulty challenges."
+          },
+          {
+            "in": "query",
+            "name": "limit_challenges",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Stop after this many distinct challenges."
+          },
+          {
+            "in": "query",
+            "name": "sub_count",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "description": "Filter challenges by the number of submissions."
+          },
+          {
+            "in": "query",
+            "name": "sub_count_is_min",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            },
+            "description": "When `true`, `sub_count` is a minimum; when `false`, it is a maximum."
+          },
+          {
+            "in": "query",
+            "name": "start_date",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Only include submissions achieved at or after this UTC timestamp."
+          },
+          {
+            "in": "query",
+            "name": "end_date",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Only include submissions achieved at or before this UTC timestamp."
+          },
+          {
+            "in": "query",
+            "name": "min_diff_sort",
+            "schema": {
+              "type": "integer",
+              "default": 4
+            },
+            "description": "Minimum difficulty sort value to include."
+          },
+          {
+            "in": "query",
+            "name": "max_diff_sort",
+            "schema": {
+              "type": "integer",
+              "default": 22
+            },
+            "description": "Maximum difficulty sort value to include."
+          },
+          {
+            "in": "query",
+            "name": "clear_state",
+            "schema": {
+              "type": "integer",
+              "enum": [0, 1, 2, 3, 4],
+              "default": 0
+            },
+            "description": "Clear filter: `0` all, `1` C only, `2` FC only, `3` FC or C/FC, `4` C or C/FC."
+          },
+          {
+            "in": "query",
+            "name": "country",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by the player's account country code."
+          },
+          {
+            "in": "query",
+            "name": "input_method",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by the player's input method."
+          },
+          {
+            "in": "query",
+            "name": "highlight_player_id",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Add a `done` flag to challenge data indicating whether this player has completed each challenge. Ignored when `player` is supplied."
+          },
+          {
+            "in": "query",
             "name": "archived",
             "schema": {
               "type": "boolean",
               "default": false
             },
-            "description": "Whether archived maps should be included."
-          },
-          {
-            "in": "query",
-            "name": "arbitrary",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            },
-            "description": "Whether arbitrary challenges should be included."
+            "description": "Include archived maps. When omitted or `false`, archived maps are excluded."
           },
           {
             "in": "query",
@@ -3497,6 +5011,49 @@
           }
         }
       },
+      "CampaignDataMutationResponse": {
+        "type": "object",
+        "required": ["success", "campaign_id"],
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "campaign_id": {
+            "type": "integer"
+          },
+          "file": {
+            "type": "string",
+            "description": "The written file name, returned by POST."
+          }
+        }
+      },
+      "MapDataExistsResponse": {
+        "type": "object",
+        "required": ["exists"],
+        "properties": {
+          "exists": {
+            "type": "boolean",
+            "const": true
+          }
+        }
+      },
+      "MapDataMutationResponse": {
+        "type": "object",
+        "required": ["success", "file_key", "campaign_id"],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "file_key": {
+            "type": "string",
+            "description": "The twelve-character cache key derived from the map binary path."
+          },
+          "campaign_id": {
+            "type": "integer"
+          }
+        }
+      },
       "CampaignDataIndexEntry": {
         "type": "object",
         "required": ["path"],
@@ -3545,11 +5102,17 @@
             "description": "Major sort category name"
           },
           "sort_major_labels": {
-            "type": "string",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
             "description": "Labels for the major sort category"
           },
           "sort_major_colors": {
-            "type": "string",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
             "description": "Colors for the major sort category"
           },
           "sort_minor_name": {
@@ -3558,11 +5121,17 @@
             "description": "Minor sort category name"
           },
           "sort_minor_labels": {
-            "type": "string",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
             "description": "Labels for the minor sort category"
           },
           "sort_minor_colors": {
-            "type": "string",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
             "description": "Colors for the minor sort category"
           },
           "author_gb_id": {
@@ -3573,6 +5142,10 @@
             "type": "string",
             "maxLength": 128,
             "description": "Name of the author on GameBanana"
+          },
+          "note": {
+            "type": "string",
+            "description": "Internal note associated with the campaign"
           },
           "maps": {
             "type": "array",
@@ -3605,28 +5178,28 @@
             "description": "Name of the map"
           },
           "url": {
-            "type": "string",
-            "format": "uri",
-            "description": "URL of the map"
+            "oneOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Map URL entries, each containing a URL and its label."
           },
           "date_added": {
             "type": "string",
             "format": "date-time",
             "description": "Timestamp when the map was added"
-          },
-          "has_fc": {
-            "type": "boolean",
-            "description": "Indicates if the map has a full clear",
-            "default": false
-          },
-          "is_rejected": {
-            "type": "boolean",
-            "description": "Indicates if the map is rejected",
-            "default": false
-          },
-          "rejection_reason": {
-            "type": "string",
-            "description": "Reason for map rejection"
           },
           "is_archived": {
             "type": "boolean",
@@ -3653,6 +5226,52 @@
             "type": "string",
             "maxLength": 128,
             "description": "Name of the author on GameBanana"
+          },
+          "note": {
+            "type": "string",
+            "description": "Internal note associated with the map."
+          },
+          "collectibles": {
+            "oneOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "minItems": 5,
+                  "maxItems": 5
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Collectible entries, each containing five string values. Empty entries are omitted."
+          },
+          "golden_changes": {
+            "type": "string",
+            "description": "Golden-change metadata associated with the map."
+          },
+          "is_progress": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether the map is part of the progression list."
+          },
+          "bin": {
+            "type": "string",
+            "description": "Path of the map's `.bin` file."
+          },
+          "counts_for_id": {
+            "type": "integer",
+            "description": "ID of the map whose clears this map counts toward."
+          },
+          "campaign": {
+            "$ref": "#/components/schemas/Campaign"
+          },
+          "counts_for": {
+            "$ref": "#/components/schemas/Map"
           },
           "challenges": {
             "type": "array",
@@ -3716,11 +5335,42 @@
             "type": "integer",
             "description": "Sort order of the challenge"
           },
+          "icon_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Optional challenge-specific icon URL"
+          },
+          "is_rejected": {
+            "type": "boolean",
+            "description": "Whether the challenge has been rejected",
+            "default": false
+          },
+          "reject_note": {
+            "type": "string",
+            "description": "Reason for rejecting the challenge"
+          },
+          "likes": {
+            "type": "integer",
+            "description": "Number of likes for the challenge",
+            "default": 0
+          },
+          "campaign": {
+            "$ref": "#/components/schemas/Campaign"
+          },
+          "map": {
+            "$ref": "#/components/schemas/Map"
+          },
+          "objective": {
+            "$ref": "#/components/schemas/Objective"
+          },
+          "difficulty": {
+            "$ref": "#/components/schemas/Difficulty"
+          },
           "data": {
             "type": "object",
             "description": "Additional data array. Only certain endpoints use this.",
             "properties": {
-              "submission_count": {
+              "count_submissions": {
                 "type": "integer",
                 "description": "Count of submissions in the challenge. Available in all endpoints that need the count of submissions, but don't send *all* submissions."
               }
@@ -3731,6 +5381,104 @@
             "items": {
               "$ref": "#/components/schemas/Submission"
             }
+          }
+        }
+      },
+      "ChallengeSpecialAction": {
+        "type": "object",
+        "description": "Special helper-only action request accepted by POST /challenge.",
+        "properties": {
+          "split": {
+            "type": "boolean",
+            "description": "Split a C/FC challenge into regular and FC challenges."
+          },
+          "merge": {
+            "type": "boolean",
+            "description": "Merge challenge `id_b` into challenge `id_a`."
+          },
+          "mark_personal": {
+            "type": "boolean",
+            "description": "Mark suggested-difficulty submissions for a challenge as personal."
+          },
+          "id": {
+            "type": "integer",
+            "description": "Challenge ID for split or mark_personal."
+          },
+          "id_a": {
+            "type": "integer",
+            "description": "Destination challenge ID for merge."
+          },
+          "id_b": {
+            "type": "integer",
+            "description": "Source challenge ID for merge."
+          },
+          "skip_webhook": {
+            "type": "boolean",
+            "description": "Skip the difficulty-change webhook during a regular update."
+          }
+        }
+      },
+      "Like": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Unique identifier for the like"
+          },
+          "challenge_id": {
+            "type": "integer",
+            "description": "Identifier for the liked challenge"
+          },
+          "player_id": {
+            "type": "integer",
+            "description": "Identifier for the player who created the like"
+          },
+          "date_created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the like was created"
+          },
+          "is_wishlist": {
+            "type": "boolean",
+            "description": "Whether the like is also a wishlist entry",
+            "default": false
+          },
+          "state": {
+            "type": "string",
+            "enum": ["current", "on_hold", "soon", "backlog"],
+            "description": "Wishlist state, only when `is_wishlist` is true"
+          },
+          "progress": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Wishlist progress percentage"
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Wishlist comment"
+          },
+          "date_updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when wishlist data was last updated"
+          },
+          "time_taken": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Time taken for the wishlist entry"
+          },
+          "low_death": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Lowest death count for the wishlist entry"
+          },
+          "challenge": {
+            "$ref": "#/components/schemas/Challenge"
+          },
+          "player": {
+            "$ref": "#/components/schemas/Player"
           }
         }
       },
@@ -3817,13 +5565,9 @@
           "account": {
             "type": "object",
             "properties": {
-              "is_verifier": {
-                "type": "boolean",
-                "description": "Whether the player is a verifier"
-              },
-              "is_admin": {
-                "type": "boolean",
-                "description": "Whether the player is an admin"
+              "role": {
+                "type": "integer",
+                "description": "Numeric account role. Role thresholds determine helper, verifier, and admin access."
               },
               "is_suspended": {
                 "type": "boolean",
@@ -3846,15 +5590,31 @@
                 "items": {
                   "type": "string"
                 },
-                "description": "User-defined links from the player (Customization)"
+                "description": "User-defined profile links; included when customization is requested."
               },
               "input_method": {
                 "type": "string",
-                "description": "Input method used by the player (Customization)"
+                "description": "Input method used by the player; included when customization is requested."
               },
               "about_me": {
                 "type": "string",
-                "description": "Description about the player (Customization)"
+                "description": "Player profile description; included when customization is requested."
+              },
+              "country": {
+                "type": "string",
+                "description": "Player account country code; included when customization is requested."
+              }
+            }
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "badges": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Badge"
+                },
+                "description": "Badges attached when the player is returned with expanded data."
               }
             }
           }
@@ -4048,11 +5808,330 @@
             "type": "string",
             "format": "date-time",
             "description": "Timestamp when the change was made"
+          },
+          "campaign": {
+            "$ref": "#/components/schemas/Campaign"
+          },
+          "map": {
+            "$ref": "#/components/schemas/Map"
+          },
+          "challenge": {
+            "$ref": "#/components/schemas/Challenge"
+          },
+          "player": {
+            "$ref": "#/components/schemas/Player"
+          },
+          "author": {
+            "$ref": "#/components/schemas/Player"
+          }
+        }
+      },
+      "Post": {
+        "type": "object",
+        "description": "A news or changelog post. The author is included when foreign keys are expanded.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Unique identifier for the post"
+          },
+          "author_id": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Identifier for the player who authored the post"
+          },
+          "date_created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the post was created"
+          },
+          "date_edited": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Timestamp of the most recent edit, if the post has been edited"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["news", "changelog"],
+            "description": "Post category"
+          },
+          "image_url": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional image URL associated with the post"
+          },
+          "title": {
+            "type": "string",
+            "description": "Post title"
+          },
+          "content": {
+            "type": "string",
+            "description": "Post body content"
+          },
+          "author": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Player"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Expanded author object"
+          }
+        }
+      },
+      "PostAdjacentResponse": {
+        "type": "object",
+        "required": ["previous", "next"],
+        "properties": {
+          "previous": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Post"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The previous post of the same type, or null when none exists"
+          },
+          "next": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Post"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The next post of the same type, or null when none exists"
+          }
+        }
+      },
+      "PaginatedPosts": {
+        "type": "object",
+        "required": ["posts", "max_count", "max_page", "page", "per_page"],
+        "properties": {
+          "posts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Post"
+            }
+          },
+          "max_count": {
+            "type": "integer",
+            "description": "Total number of posts matching the filters"
+          },
+          "max_page": {
+            "type": "integer",
+            "description": "Total number of pages"
+          },
+          "page": {
+            "type": "integer",
+            "description": "Current page number"
+          },
+          "per_page": {
+            "type": "integer",
+            "description": "Number of posts requested per page"
+          }
+        }
+      },
+      "ServerSettings": {
+        "type": "object",
+        "description": "The singleton server configuration record. The API uses record ID 1.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Server settings record ID; normally 1"
+          },
+          "registrations_enabled": {
+            "type": "boolean",
+            "description": "Whether new account registrations are enabled"
+          },
+          "submissions_enabled": {
+            "type": "boolean",
+            "description": "Whether new submissions are enabled"
+          },
+          "global_notices": {
+            "oneOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                },
+                "description": "Notice entries; each entry contains a notice value and its description"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "maintenance_mode": {
+            "type": "boolean",
+            "description": "Whether the site is in maintenance mode"
+          }
+        }
+      },
+      "StampSubmission": {
+        "type": "object",
+        "description": "A stamp awarded to a player's verified submission.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Unique identifier for the stamp submission"
+          },
+          "stamp_id": {
+            "type": "integer",
+            "description": "Identifier of the stamp"
+          },
+          "submission_id": {
+            "type": "integer",
+            "description": "Identifier of the submission receiving the stamp"
+          },
+          "player_id": {
+            "type": "integer",
+            "description": "Identifier of the player receiving the stamp"
+          },
+          "date_assigned": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the stamp was assigned"
+          },
+          "submission": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Submission"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Expanded submission object"
+          },
+          "player": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Player"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Expanded player object"
+          }
+        }
+      },
+      "StampSubmissionInput": {
+        "type": "object",
+        "required": ["stamp_id", "submission_id"],
+        "description": "Input for creating a stamp submission. The server derives player_id from the submission and sets date_assigned.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Ignored for creation; accepted because the request is parsed as a StampSubmission object"
+          },
+          "stamp_id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Identifier of the stamp"
+          },
+          "submission_id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Identifier of the verified submission receiving the stamp"
+          },
+          "player_id": {
+            "type": "integer",
+            "description": "Ignored; the server derives this from submission_id"
+          },
+          "date_assigned": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Ignored; the server sets this timestamp"
+          }
+        }
+      },
+      "StampListStat": {
+        "type": "object",
+        "required": ["stamp_count", "total_tier", "avg_tier", "player_name", "player_id"],
+        "properties": {
+          "stamp_count": {
+            "type": "integer",
+            "description": "Number of stamps assigned to the player"
+          },
+          "total_tier": {
+            "type": "integer",
+            "description": "Sum of the difficulty sort values for the player's stamped submissions"
+          },
+          "avg_tier": {
+            "type": "number",
+            "description": "Average difficulty sort value for the player's stamped submissions"
+          },
+          "player_name": {
+            "type": "string",
+            "description": "Player name"
+          },
+          "player_id": {
+            "type": "integer",
+            "description": "Player ID"
+          }
+        }
+      },
+      "PaginatedCampaigns": {
+        "type": "object",
+        "properties": {
+          "max_count": {
+            "type": "integer",
+            "description": "The total number of campaign view rows available"
+          },
+          "max_page": {
+            "type": "integer",
+            "description": "The total number of pages available"
+          },
+          "page": {
+            "type": "integer",
+            "description": "The current page number"
+          },
+          "per_page": {
+            "type": "integer",
+            "description": "The number of rows per page"
+          },
+          "campaigns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Campaign"
+            }
           }
         }
       },
       "Showcase": {
         "type": "object",
+        "description": "Internal showcase persistence record. This class intentionally cannot be serialized directly; use ShowcaseResponse for the public API representation.",
         "properties": {
           "id": {
             "type": "integer",
@@ -4074,6 +6153,7 @@
       },
       "ShowcaseResponse": {
         "type": "object",
+        "required": ["submissions", "type"],
         "properties": {
           "submissions": {
             "type": "array",
@@ -4084,6 +6164,7 @@
           },
           "type": {
             "type": "string",
+            "enum": ["custom", "hardest"],
             "description": "The type of showcase (`custom` or `hardest`)."
           }
         }
@@ -4120,7 +6201,7 @@
         "properties": {
           "max_count": {
             "type": "integer",
-            "description": "The total number of submissions available"
+            "description": "The total number of changes available"
           },
           "max_page": {
             "type": "integer",
@@ -4132,7 +6213,7 @@
           },
           "per_page": {
             "type": "integer",
-            "description": "The number of submissions per page"
+            "description": "The number of changes per page"
           },
           "submissions": {
             "type": "array",
@@ -4200,12 +6281,9 @@
         "type": "object",
         "properties": {
           "tiers": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "object",
-              "additionalProperties": {
-                "$ref": "#/components/schemas/Difficulty"
-              }
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Difficulty"
             }
           },
           "challenges": {
@@ -4251,6 +6329,7 @@
       },
       "SearchResponse": {
         "type": "object",
+        "required": ["q", "in", "str_len"],
         "properties": {
           "q": {
             "type": "string",
@@ -4285,6 +6364,10 @@
             "items": {
               "$ref": "#/components/schemas/SearchAuthor"
             }
+          },
+          "str_len": {
+            "type": "integer",
+            "description": "Byte length of the original search query string"
           }
         }
       },
@@ -4323,6 +6406,41 @@
           "type": "integer"
         },
         "description": "A mapping of difficulty IDs to their respective submission counts."
+      },
+      "PlayerStatsResponse": {
+        "type": "object",
+        "required": ["count_by_difficulty", "total_count", "total_time", "account"],
+        "properties": {
+          "count_by_difficulty": {
+            "$ref": "#/components/schemas/DifficultyStats"
+          },
+          "total_count": {
+            "type": "integer",
+            "description": "Total number of verified, non-obsolete submissions."
+          },
+          "total_time": {
+            "type": "integer",
+            "description": "Total time taken across verified, non-obsolete submissions."
+          },
+          "account": {
+            "oneOf": [
+              {
+                "type": "array",
+                "maxItems": 0
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "date_created": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            ],
+            "description": "Account creation data, or an empty array when no account row is found."
+          }
+        }
       },
       "GlobalStatsResponse": {
         "type": "object",
