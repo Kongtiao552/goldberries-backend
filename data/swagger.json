@@ -61,9 +61,955 @@
     },
     {
       "name": "Stats"
+    },
+    {
+      "name": "Admin"
+    },
+    {
+      "name": "Authentication"
+    },
+    {
+      "name": "Badge"
     }
   ],
   "paths": {
+    "/admin/actions": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Run an administrative action",
+        "description": "Runs one of the registered administrative actions. All actions require a logged-in player account. `reject_challenge` and `swap_lobbies` require Helper or higher, `merge_players` requires Verifier or higher, and `clean_campaign_data_errors` requires Admin.",
+        "parameters": [
+          {
+            "name": "action",
+            "in": "query",
+            "description": "Action to run",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["reject_challenge", "swap_lobbies", "merge_players", "clean_campaign_data_errors"]
+            }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "description": "Challenge ID for `reject_challenge`",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "reason",
+            "in": "query",
+            "description": "Rejection reason for `reject_challenge`",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "campaign_id",
+            "in": "query",
+            "description": "Campaign ID for `swap_lobbies`",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "sort_a",
+            "in": "query",
+            "description": "First lobby index for `swap_lobbies`",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "sort_b",
+            "in": "query",
+            "description": "Second lobby index for `swap_lobbies`",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "base_player_id",
+            "in": "query",
+            "description": "Player ID to retain for `merge_players`",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "merge_player_id",
+            "in": "query",
+            "description": "Player ID to delete for `merge_players`",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Administrative action completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminActionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing, invalid, or incompatible action parameters"
+          },
+          "401": {
+            "description": "Not logged in"
+          },
+          "403": {
+            "description": "Account does not have the required role"
+          },
+          "404": {
+            "description": "Referenced challenge, campaign, or player was not found"
+          },
+          "405": {
+            "description": "Method Not Allowed"
+          },
+          "500": {
+            "description": "The administrative action failed while updating data"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/admin/process-campaign": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Process campaign GameBanana data",
+        "description": "Downloads and processes the GameBanana files for one or more database campaigns. Multiple campaign IDs may be supplied as a comma-separated value. Requires Helper or higher.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "One or more comma-separated database campaign IDs",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "12,18"
+            }
+          },
+          {
+            "name": "regenerate",
+            "in": "query",
+            "description": "Whether to force re-download of cached GameBanana files",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One processing result per supplied campaign ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AdminCampaignProcessingResult"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing campaign ID parameter"
+          },
+          "401": {
+            "description": "Not logged in"
+          },
+          "403": {
+            "description": "Account does not have Helper or higher permissions"
+          },
+          "405": {
+            "description": "Method Not Allowed"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/admin/process-gb-campaign": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Process a GameBanana campaign preview",
+        "description": "Downloads and processes a GameBanana mod or WIP without requiring an existing database campaign. Requires a logged-in player account. The `regenerate` option requires Helper or higher.",
+        "parameters": [
+          {
+            "name": "gamebanana_url",
+            "in": "query",
+            "description": "Full GameBanana mod or WIP URL",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri",
+              "pattern": "^https://gamebanana\\.com/(mods|wips)/[0-9]+"
+            }
+          },
+          {
+            "name": "regenerate",
+            "in": "query",
+            "description": "Whether to force re-download and reprocessing of cached files",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GameBanana processing result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminGameBananaProcessingResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid GameBanana URL"
+          },
+          "401": {
+            "description": "Not logged in"
+          },
+          "403": {
+            "description": "Account does not have permission to regenerate data"
+          },
+          "405": {
+            "description": "Method Not Allowed"
+          },
+          "503": {
+            "description": "All campaign processing slots are currently in use"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/admin/temp-campaign-data": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Retrieve processed temporary campaign data",
+        "description": "Returns the cached `index.json` generated for a GameBanana mod or WIP. Requires a logged-in player account.",
+        "parameters": [
+          {
+            "name": "gamebanana_url",
+            "in": "query",
+            "description": "Full GameBanana mod or WIP URL",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri",
+              "pattern": "^https://gamebanana\\.com/(mods|wips)/[0-9]+"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Temporary campaign data index",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignDataIndex"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid GameBanana URL"
+          },
+          "401": {
+            "description": "Not logged in"
+          },
+          "403": {
+            "description": "Account does not have access"
+          },
+          "404": {
+            "description": "Temporary campaign data was not found"
+          },
+          "405": {
+            "description": "Method Not Allowed"
+          },
+          "500": {
+            "description": "Temporary campaign data could not be read"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/admin/temp-map-data": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Retrieve processed temporary map data",
+        "description": "Returns the cached JSON for one bin path from a processed GameBanana mod or WIP. With `check_exists=true`, returns only an existence flag. Requires a logged-in player account.",
+        "parameters": [
+          {
+            "name": "gamebanana_url",
+            "in": "query",
+            "description": "Full GameBanana mod or WIP URL",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri",
+              "pattern": "^https://gamebanana\\.com/(mods|wips)/[0-9]+"
+            }
+          },
+          {
+            "name": "bin_path",
+            "in": "query",
+            "description": "Relative path of the bin file within the GameBanana campaign",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "check_exists",
+            "in": "query",
+            "description": "Return only whether the processed map data exists",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Existence flag or processed map JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "exists": {
+                          "const": true
+                        }
+                      },
+                      "required": ["exists"]
+                    },
+                    {
+                      "type": "object",
+                      "description": "The structure of processed map JSON depends on the bin data.",
+                      "additionalProperties": true
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid GameBanana URL or bin path"
+          },
+          "401": {
+            "description": "Not logged in"
+          },
+          "403": {
+            "description": "Account does not have access"
+          },
+          "404": {
+            "description": "Temporary map data was not found"
+          },
+          "405": {
+            "description": "Method Not Allowed"
+          },
+          "500": {
+            "description": "Temporary map data could not be read"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/admin/upload-file": {
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Upload an image or icon asset",
+        "description": "Uploads a PNG, JPEG, GIF, or WebP file to an approved asset directory. Requires a logged-in player account and News Writer access. The `map_image` destination requires a numeric `map_id`; map images are resized to 1920x1080 and saved as WebP.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file", "destination"],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "PNG, JPEG, GIF, or WebP file"
+                  },
+                  "destination": {
+                    "type": "string",
+                    "enum": ["icon", "campaign_icon", "post", "badge", "map_image"]
+                  },
+                  "file_name": {
+                    "type": "string",
+                    "description": "Optional file name without extension; defaults to the uploaded file name. Ignored for `map_image`."
+                  },
+                  "map_id": {
+                    "type": "integer",
+                    "description": "Required when `destination` is `map_image`"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "File uploaded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["file_name", "path"],
+                  "properties": {
+                    "file_name": {
+                      "type": "string"
+                    },
+                    "path": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid upload parameters, file extension, image, or dimensions"
+          },
+          "401": {
+            "description": "Not logged in"
+          },
+          "403": {
+            "description": "Account or destination role is not authorized"
+          },
+          "404": {
+            "description": "Map specified by `map_id` was not found"
+          },
+          "405": {
+            "description": "Method Not Allowed"
+          },
+          "500": {
+            "description": "Upload or destination processing failed"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/auth/api-key": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Retrieve the current account API key",
+        "description": "Returns the authenticated account's API key. The optional account ID is not used by this operation; it always returns the current account's key.",
+        "responses": {
+          "200": {
+            "description": "Current account API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in"
+          },
+          "403": {
+            "description": "Account is suspended"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Generate an API key",
+        "description": "Generates and stores a new API key for the current account. A Verifier or higher may provide `id` to regenerate the key for another account.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "Optional target account ID; requires Verifier or higher",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "New API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in"
+          },
+          "403": {
+            "description": "Account is suspended or lacks the required role"
+          },
+          "404": {
+            "description": "Target account was not found"
+          },
+          "500": {
+            "description": "Failed to update the API key"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["Authentication"],
+        "summary": "Revoke an API key",
+        "description": "Removes the current account's API key. A Verifier or higher may provide `id` to revoke the key for another account.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "Optional target account ID; requires Verifier or higher",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "API key revoked successfully"
+          },
+          "401": {
+            "description": "Not logged in"
+          },
+          "403": {
+            "description": "Account is suspended or lacks the required role"
+          },
+          "404": {
+            "description": "Target account was not found"
+          },
+          "500": {
+            "description": "Failed to revoke the API key"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/badge": {
+      "get": {
+        "tags": ["Badge"],
+        "summary": "Retrieve one or more badges",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "Numeric badge ID, `all`, or an array of numeric badge IDs",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string",
+                  "enum": ["all"]
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A badge or list of badges",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Badge"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Badge"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or missing badge ID"
+          },
+          "404": {
+            "description": "Badge ID does not exist"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Badge"],
+        "summary": "Create or update a badge",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Badge"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Badge created or updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Badge"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in"
+          },
+          "403": {
+            "description": "Verifier access is required"
+          },
+          "500": {
+            "description": "Failed to create or update the badge"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["Badge"],
+        "summary": "Delete a badge",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "Badge ID to delete",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Badge deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Badge"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid badge ID"
+          },
+          "401": {
+            "description": "Not logged in"
+          },
+          "403": {
+            "description": "Verifier access is required and API-key authentication is not allowed for deletion"
+          },
+          "404": {
+            "description": "Badge not found"
+          },
+          "500": {
+            "description": "Failed to delete the badge"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/badge/get-player-badges": {
+      "get": {
+        "tags": ["Badge"],
+        "summary": "Retrieve all badges awarded to a player",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "Player ID",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Badges awarded to the player",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Badge"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing player ID"
+          },
+          "404": {
+            "description": "Player not found"
+          },
+          "405": {
+            "description": "Method Not Allowed"
+          }
+        }
+      }
+    },
+    "/badge/get-players": {
+      "get": {
+        "tags": ["Badge"],
+        "summary": "Retrieve players awarded a badge",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "Badge ID",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Players awarded the badge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BadgePlayer"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing badge ID"
+          },
+          "404": {
+            "description": "Badge not found"
+          },
+          "405": {
+            "description": "Method Not Allowed"
+          }
+        }
+      }
+    },
+    "/badge/player": {
+      "get": {
+        "tags": ["Badge"],
+        "summary": "Retrieve badge-player mappings",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "Numeric BadgePlayer ID, `all`, or an array of numeric BadgePlayer IDs",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string",
+                  "enum": ["all"]
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A BadgePlayer mapping or list of mappings with expanded player and badge objects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/BadgePlayer"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/BadgePlayer"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or missing BadgePlayer ID"
+          },
+          "404": {
+            "description": "BadgePlayer ID does not exist"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Badge"],
+        "summary": "Create a badge-player mapping",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BadgePlayer"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "BadgePlayer mapping created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadgePlayer"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in"
+          },
+          "403": {
+            "description": "Verifier access is required"
+          },
+          "500": {
+            "description": "Failed to create the BadgePlayer mapping"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["Badge"],
+        "summary": "Delete a badge-player mapping",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "BadgePlayer mapping ID to delete",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "BadgePlayer mapping deleted"
+          },
+          "400": {
+            "description": "Missing BadgePlayer ID"
+          },
+          "401": {
+            "description": "Not logged in"
+          },
+          "403": {
+            "description": "Verifier access is required"
+          },
+          "404": {
+            "description": "BadgePlayer mapping not found"
+          },
+          "500": {
+            "description": "Failed to delete the BadgePlayer mapping"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
     "/campaign": {
       "get": {
         "summary": "Retrieve a campaign or a list of campaigns",
@@ -2207,6 +3153,365 @@
   },
   "components": {
     "schemas": {
+      "ApiKeyResponse": {
+        "type": "object",
+        "required": ["api_key"],
+        "properties": {
+          "api_key": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{32}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "Badge": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Unique identifier for the badge"
+          },
+          "icon_url": {
+            "type": "string",
+            "description": "URL of the badge icon"
+          },
+          "title": {
+            "type": "string",
+            "description": "Badge title"
+          },
+          "description": {
+            "type": "string",
+            "description": "Badge description"
+          },
+          "color": {
+            "type": "string",
+            "description": "Badge display color",
+            "default": "#ffffff"
+          },
+          "date_created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the badge was created"
+          },
+          "flags": {
+            "type": "integer",
+            "description": "Bit flags for special badge properties",
+            "default": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Additional endpoint-specific data, including `date_awarded` when returned by `get-player-badges`",
+            "properties": {
+              "date_awarded": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "additionalProperties": true
+          }
+        }
+      },
+      "BadgePlayer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Unique identifier for the badge-player mapping"
+          },
+          "player_id": {
+            "type": "integer",
+            "description": "Identifier of the awarded player"
+          },
+          "badge_id": {
+            "type": "integer",
+            "description": "Identifier of the awarded badge"
+          },
+          "date_awarded": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the badge was awarded"
+          },
+          "player": {
+            "$ref": "#/components/schemas/Player"
+          },
+          "badge": {
+            "$ref": "#/components/schemas/Badge"
+          }
+        }
+      },
+      "AdminActionResponse": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AdminRejectChallengeActionResponse"
+          },
+          {
+            "$ref": "#/components/schemas/AdminSwapLobbiesActionResponse"
+          },
+          {
+            "$ref": "#/components/schemas/AdminMergePlayersActionResponse"
+          },
+          {
+            "$ref": "#/components/schemas/AdminCleanCampaignDataErrorsActionResponse"
+          }
+        ]
+      },
+      "AdminRejectChallengeActionResponse": {
+        "type": "object",
+        "required": ["message", "data"],
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "required": ["submissions"],
+            "properties": {
+              "submissions": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Submission"
+                }
+              }
+            }
+          }
+        }
+      },
+      "AdminSwapLobbiesActionResponse": {
+        "type": "object",
+        "required": ["message", "data"],
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "required": ["count_a_to_b", "count_b_to_a", "campaign"],
+            "properties": {
+              "count_a_to_b": {
+                "type": "integer"
+              },
+              "count_b_to_a": {
+                "type": "integer"
+              },
+              "campaign": {
+                "$ref": "#/components/schemas/Campaign"
+              }
+            }
+          }
+        }
+      },
+      "AdminMergePlayersActionResponse": {
+        "type": "object",
+        "required": ["message", "data"],
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "required": [
+              "deleted_merge_player_id",
+              "deleted_merge_player_name",
+              "submissions_moved",
+              "base_player"
+            ],
+            "properties": {
+              "deleted_merge_player_id": {
+                "type": "integer"
+              },
+              "deleted_merge_player_name": {
+                "type": "string"
+              },
+              "submissions_moved": {
+                "type": "integer"
+              },
+              "base_player": {
+                "$ref": "#/components/schemas/Player"
+              }
+            }
+          }
+        }
+      },
+      "AdminCleanCampaignDataErrorsActionResponse": {
+        "type": "object",
+        "required": ["message", "data"],
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "required": ["deleted_count", "deleted_ids", "temp_deleted"],
+            "properties": {
+              "deleted_count": {
+                "type": "integer"
+              },
+              "deleted_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "temp_deleted": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      },
+      "AdminProcessingBin": {
+        "type": "object",
+        "required": ["path"],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "AdminCampaignProcessingResult": {
+        "type": "object",
+        "required": ["id", "success"],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "mod_id": {
+            "type": "integer"
+          },
+          "english_txt_found": {
+            "type": "boolean"
+          },
+          "bin_count": {
+            "type": "integer"
+          },
+          "matched_maps": {
+            "type": "integer"
+          },
+          "conversion_errors": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "unmatched_bins": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminProcessingBin"
+            }
+          },
+          "unmatched_maps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "name"],
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "name": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "AdminGameBananaProcessingResult": {
+        "type": "object",
+        "required": ["gamebanana_url", "success"],
+        "properties": {
+          "gamebanana_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "english_txt_found": {
+            "type": "boolean"
+          },
+          "bin_count": {
+            "type": "integer"
+          },
+          "conversion_errors": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "bins": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminProcessingBin"
+            }
+          }
+        }
+      },
+      "CampaignDataIndex": {
+        "type": "object",
+        "required": ["status", "message", "bin_count", "data"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok", "error"]
+          },
+          "message": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bin_count": {
+            "type": "integer"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CampaignDataIndexEntry"
+            }
+          }
+        }
+      },
+      "CampaignDataIndexEntry": {
+        "type": "object",
+        "required": ["path"],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "conversion_error": {
+            "type": "boolean"
+          }
+        }
+      },
       "Campaign": {
         "type": "object",
         "properties": {
