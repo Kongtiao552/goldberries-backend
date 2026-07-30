@@ -312,7 +312,7 @@ class Submission extends DbObject
     $param_index++;
     $offset_param = "\${$param_index}";
     $param_index++;
-    $id_query = "SELECT id FROM submission WHERE $where_str ORDER BY $order_by LIMIT $limit_param OFFSET $offset_param";
+    $id_query = "SELECT id FROM submission WHERE $where_str ORDER BY $order_by, date_created DESC, id DESC LIMIT $limit_param OFFSET $offset_param";
     $id_params = array_merge($params, [intval($per_page), (intval($page) - 1) * intval($per_page)]);
     $id_result = pg_query_params_or_die($DB, $id_query, $id_params);
     $ids = [];
@@ -329,7 +329,7 @@ class Submission extends DbObject
         $view_params[] = $ids[$i];
       }
       $in_clause = implode(',', $placeholders);
-      $query = "SELECT * FROM view_submissions WHERE submission_id IN ($in_clause) ORDER BY submission_$order_by, submission_date_created DESC";
+      $query = "SELECT * FROM view_submissions WHERE submission_id IN ($in_clause) ORDER BY submission_$order_by, submission_date_created DESC, submission_id DESC";
       $result = pg_query_params_or_die($DB, $query, $view_params);
       while ($row = pg_fetch_assoc($result)) {
         $submission = new Submission();

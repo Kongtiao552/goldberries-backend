@@ -632,7 +632,7 @@ function webhook_check_high_time_taken($submission)
   if ($submission->is_verified !== true) {
     return;
   }
-  if ($submission->time_taken === null || $submission->time_taken < 684000) {
+  if ($submission->time_taken === null || $submission->time_taken < 648000) {
     return;
   }
 
