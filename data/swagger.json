@@ -79,6 +79,12 @@
     },
     {
       "name": "Badge"
+    },
+    {
+      "name": "Utilities"
+    },
+    {
+      "name": "Verification Notice"
     }
   ],
   "paths": {
@@ -2437,21 +2443,81 @@
     "/submission": {
       "get": {
         "tags": ["Submission"],
-        "summary": "Retrieve a submission",
+        "summary": "Retrieve a submission or list of submissions",
         "parameters": [
           {
             "name": "id",
             "in": "query",
             "required": true,
-            "description": "The ID of the submission to retrieve",
             "schema": {
-              "type": "integer"
-            }
+              "oneOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                {
+                  "type": "string",
+                  "enum": ["all"]
+                }
+              ]
+            },
+            "description": "A submission ID, an array of submission IDs, or `all`."
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful response with the submission data",
+            "description": "A submission or list of submissions with related objects expanded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Submission"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Submission"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid submission selector."
+          },
+          "404": {
+            "description": "A requested submission does not exist."
+          }
+        }
+      },
+      "post": {
+        "tags": ["Submission"],
+        "summary": "Create or update a submission",
+        "description": "Creates a submission when `id` is omitted and updates an existing submission when `id` is provided. Players may update their own permitted fields; Helpers may perform verification and broader edits. `challenge_id` or `new_challenge` is required when creating a submission.",
+        "requestBody": {
+          "description": "Submission data. The optional `skip_webhook` and `like_challenge` flags control side effects; `new_challenge` may be supplied instead of `challenge_id` when creating a submission.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmissionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Submission created/updated successfully",
             "content": {
               "application/json": {
                 "schema": {
@@ -2460,34 +2526,17 @@
               }
             }
           },
-          "404": {
-            "description": "Submission not found"
-          }
-        }
-      },
-      "post": {
-        "tags": ["Submission"],
-        "summary": "Create or update a submission",
-        "requestBody": {
-          "description": "Submission object to update, or create if `id` is omitted",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Submission"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Submission created/updated successfully"
-          },
           "400": {
-            "description": "Invalid submission object"
+            "description": "Invalid submission data, challenge, difficulty, date, or URL."
           },
-          "404": {
-            "description": "Submission not found"
+          "401": {
+            "description": "Not logged in."
+          },
+          "403": {
+            "description": "The account cannot submit for or edit the requested player, or Helper access is required."
+          },
+          "500": {
+            "description": "The submission could not be saved."
           }
         },
         "security": [
@@ -2504,21 +2553,28 @@
             "name": "id",
             "in": "query",
             "required": true,
-            "description": "The ID of the submission to delete",
             "schema": {
-              "type": "integer"
-            }
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "The ID of the submission to delete."
           }
         ],
         "responses": {
           "200": {
-            "description": "Submission deleted successfully"
+            "description": "Submission deleted successfully."
+          },
+          "401": {
+            "description": "Not logged in."
           },
           "403": {
             "description": "Not authorized"
           },
           "404": {
-            "description": "Submission not found"
+            "description": "Submission not found."
+          },
+          "500": {
+            "description": "The submission could not be deleted."
           }
         },
         "security": [
@@ -2531,11 +2587,88 @@
     "/submission/queue": {
       "get": {
         "tags": ["Submission"],
-        "summary": "Get a list of unverified submissions",
-        "description": "Returns a list of unverified submissions in order of submission date",
+        "summary": "Get the verification queue",
+        "description": "Returns pending submissions in creation order together with verification notices.",
         "responses": {
           "200": {
-            "description": "A list of unverified submissions",
+            "description": "The pending submission queue and verification notices.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionQueueResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/submission/queue-inspect": {
+      "get": {
+        "tags": ["Submission"],
+        "summary": "Inspect a submission for verification",
+        "description": "Returns the player's previous verifier notes and related submissions on the same map. Requires Helper access.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "The submission ID to inspect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verification notes and related submissions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionQueueInspectResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid submission ID."
+          },
+          "401": {
+            "description": "Not logged in."
+          },
+          "403": {
+            "description": "Helper access is required."
+          },
+          "404": {
+            "description": "Submission not found."
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/submission/mass-verify": {
+      "post": {
+        "tags": ["Submission"],
+        "summary": "Verify or reject submissions in bulk",
+        "description": "Verifies or rejects all listed pending submissions after validating the complete batch. Requires Helper access.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MassVerifyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated submissions.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2546,8 +2679,25 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "The request is invalid, a submission is already decided, or a submission cannot be verified by this account."
+          },
+          "401": {
+            "description": "Not logged in."
+          },
+          "403": {
+            "description": "Helper access is required."
+          },
+          "500": {
+            "description": "A submission could not be updated."
           }
-        }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
       }
     },
     "/submission/recent": {
@@ -2560,7 +2710,7 @@
             "name": "verified",
             "in": "query",
             "required": false,
-            "description": "Filter submissions based on their verification status",
+            "description": "Filter by verification status. Omit this parameter for pending submissions; `true` selects verified submissions and `false` selects rejected submissions.",
             "schema": {
               "type": "boolean"
             }
@@ -2572,7 +2722,8 @@
             "description": "The page number to retrieve",
             "schema": {
               "type": "integer",
-              "default": 1
+              "default": 1,
+              "minimum": 1
             }
           },
           {
@@ -2582,16 +2733,9 @@
             "description": "The number of submissions per page",
             "schema": {
               "type": "integer",
-              "default": 10
-            }
-          },
-          {
-            "name": "search",
-            "in": "query",
-            "required": false,
-            "description": "Search term to filter submissions",
-            "schema": {
-              "type": "string"
+              "default": 10,
+              "minimum": 1,
+              "maximum": 1000
             }
           },
           {
@@ -2606,7 +2750,7 @@
         ],
         "responses": {
           "200": {
-            "description": "A paginated list of recent submissions",
+            "description": "A paginated list of recent submissions.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3128,25 +3272,36 @@
     "/suggestion": {
       "get": {
         "tags": ["Suggestion"],
-        "summary": "Retrieve a suggestion",
+        "summary": "Retrieve a suggestion or list of suggestions",
         "parameters": [
           {
             "in": "query",
             "name": "id",
             "required": true,
             "schema": {
-              "type": "integer"
+              "type": "integer",
+              "minimum": 1
             },
-            "description": "The ID of the suggestion to retrieve."
+            "description": "The suggestion ID to retrieve."
           }
         ],
         "responses": {
           "200": {
-            "description": "The requested suggestion object.",
+            "description": "A suggestion or list of suggestions with associated content and votes expanded.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Suggestion"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Suggestion"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Suggestion"
+                      }
+                    }
+                  ]
                 }
               }
             }
@@ -3162,12 +3317,13 @@
       "post": {
         "tags": ["Suggestion"],
         "summary": "Create or update a suggestion",
+        "description": "Creates a suggestion when `id` is omitted. Updating verification or acceptance state requires Helper access; creating a suggestion requires a logged-in account. Challenge-linked suggestions may include a suggested difficulty.",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Suggestion"
+                "$ref": "#/components/schemas/SuggestionInput"
               }
             }
           }
@@ -3186,8 +3342,17 @@
           "400": {
             "description": "Validation errors or missing parameters."
           },
+          "401": {
+            "description": "Not logged in."
+          },
           "403": {
             "description": "Unauthorized access or action."
+          },
+          "404": {
+            "description": "A referenced challenge or difficulty does not exist."
+          },
+          "500": {
+            "description": "The suggestion could not be saved."
           }
         },
         "security": [
@@ -3222,6 +3387,12 @@
           },
           "404": {
             "description": "Suggestion not found."
+          },
+          "401": {
+            "description": "Not logged in."
+          },
+          "500": {
+            "description": "The suggestion could not be deleted."
           }
         },
         "security": [
@@ -3231,10 +3402,46 @@
         ]
       }
     },
+    "/suggestion/last-placement-suggestion": {
+      "get": {
+        "tags": ["Suggestion"],
+        "summary": "Retrieve the latest verified placement suggestion",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "challenge",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "The challenge ID."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The latest verified suggestion with a suggested difficulty for the challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Suggestion"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid challenge ID."
+          },
+          "404": {
+            "description": "No verified placement suggestion exists for the challenge."
+          }
+        }
+      }
+    },
     "/suggestion/vote": {
       "get": {
         "tags": ["Suggestion"],
-        "summary": "Retrieve votes for a suggestion",
+        "summary": "Retrieve a suggestion vote or list of votes",
         "parameters": [
           {
             "in": "query",
@@ -3243,7 +3450,7 @@
             "schema": {
               "type": "integer"
             },
-            "description": "The ID of the suggestion to retrieve votes for."
+            "description": "A suggestion-vote ID, an array of suggestion-vote IDs, or `all`."
           },
           {
             "in": "query",
@@ -3252,19 +3459,26 @@
               "type": "integer",
               "default": 2
             },
-            "description": "The depth of related data to include in the response."
+            "description": "Depth of expanded linked data. Defaults to 2."
           }
         ],
         "responses": {
           "200": {
-            "description": "List of votes for the suggestion.",
+            "description": "A suggestion vote or list of suggestion votes.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/SuggestionVote"
-                  }
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/SuggestionVote"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SuggestionVote"
+                      }
+                    }
+                  ]
                 }
               }
             }
@@ -3273,19 +3487,20 @@
             "description": "Missing or invalid `id` parameter."
           },
           "404": {
-            "description": "Suggestion not found."
+            "description": "A requested suggestion vote does not exist."
           }
         }
       },
       "post": {
         "tags": ["Suggestion"],
         "summary": "Cast a vote on a suggestion",
+        "description": "Creates a vote for the current player. The server derives `player_id`; each player may vote only once per suggestion.",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SuggestionVote"
+                "$ref": "#/components/schemas/SuggestionVoteInput"
               }
             }
           }
@@ -3304,11 +3519,17 @@
           "400": {
             "description": "Validation errors or duplicate vote."
           },
+          "401": {
+            "description": "Not logged in."
+          },
           "403": {
             "description": "Unauthorized action."
           },
           "404": {
             "description": "Suggestion does not exist."
+          },
+          "500": {
+            "description": "The vote could not be created."
           }
         },
         "security": [
@@ -3343,6 +3564,12 @@
           },
           "404": {
             "description": "Vote not found."
+          },
+          "401": {
+            "description": "Not logged in."
+          },
+          "500": {
+            "description": "The vote could not be deleted."
           }
         },
         "security": [
@@ -3381,7 +3608,8 @@
             "in": "query",
             "name": "challenge",
             "schema": {
-              "type": "integer"
+              "type": "integer",
+              "minimum": 1
             },
             "description": "Optional filter for the challenge ID to filter suggestions by."
           },
@@ -3391,7 +3619,25 @@
             "schema": {
               "type": "boolean"
             },
-            "description": "Optional filter for expired suggestions. If true, only shows non-expired suggestions; if false, only shows expired suggestions."
+            "description": "Optional lifecycle filter. `true` includes completed or rejected suggestions, `false` includes active undecided suggestions, and omission selects expired but undecided suggestions."
+          },
+          {
+            "in": "query",
+            "name": "type",
+            "schema": {
+              "type": "string",
+              "enum": ["all", "general", "challenge", "challenge_own"],
+              "default": "all"
+            },
+            "description": "Filter by suggestion type. `general` has no challenge, `challenge` has a challenge, and `challenge_own` limits challenge suggestions to challenges the current player has submitted to."
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Optional case-insensitive filter matching campaign names, map names, author names, or suggestion comments."
           }
         ],
         "responses": {
@@ -4663,6 +4909,344 @@
           }
         }
       }
+    },
+    "/util/data-dump": {
+      "get": {
+        "tags": ["Utilities"],
+        "summary": "Download public data for a resource type",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["campaign", "map", "challenge", "submission", "player"]
+            },
+            "description": "Resource type to export. Only non-rejected, and for submissions/player records non-suspended, data is included."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The requested public records ordered by ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Campaign"
+                      }
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Map"
+                      }
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Challenge"
+                      }
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Submission"
+                      }
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Player"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid type."
+          },
+          "500": {
+            "description": "The data dump query failed."
+          }
+        }
+      }
+    },
+    "/util/get-everest-dl-link": {
+      "get": {
+        "tags": ["Utilities"],
+        "summary": "Create an Everest one-click download link",
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^https://gamebanana\\.com/(mods|wips)/[0-9]+"
+            },
+            "description": "A GameBanana mod or WIP URL."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The generated Everest download link.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EverestDownloadLink"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid GameBanana URL."
+          },
+          "404": {
+            "description": "The mod was not found or has no files."
+          },
+          "500": {
+            "description": "The latest file could not be determined."
+          },
+          "502": {
+            "description": "The GameBanana API could not be reached or returned an error."
+          }
+        }
+      }
+    },
+    "/util/get-mod-info": {
+      "get": {
+        "tags": ["Utilities"],
+        "summary": "Retrieve GameBanana mod information",
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^https://gamebanana\\.com/(mods|wips)/[0-9]+"
+            },
+            "description": "A GameBanana mod or WIP URL."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The GameBanana mod name and submitter information.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid GameBanana URL."
+          },
+          "404": {
+            "description": "The mod was not found."
+          },
+          "500": {
+            "description": "The GameBanana response did not contain the expected fields."
+          },
+          "502": {
+            "description": "The GameBanana API could not be reached or returned an error."
+          }
+        }
+      }
+    },
+    "/util/post-report": {
+      "post": {
+        "tags": ["Utilities"],
+        "summary": "Submit a report to the moderation webhook",
+        "description": "Submits a report using the authenticated player's identity. The optional URL is omitted when empty.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The report was submitted successfully."
+          },
+          "400": {
+            "description": "The topic or message is missing, or the request body is invalid."
+          },
+          "401": {
+            "description": "Not logged in."
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/util/random": {
+      "get": {
+        "tags": ["Utilities"],
+        "summary": "Retrieve random records",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["challenge", "map", "campaign", "difficulty", "player", "submission"]
+            },
+            "description": "Resource type to select randomly."
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 1
+            },
+            "description": "Number of records to return, clamped to the range 1 through 100."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Random records of the requested type.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/Challenge"
+                      },
+                      {
+                        "$ref": "#/components/schemas/Map"
+                      },
+                      {
+                        "$ref": "#/components/schemas/Campaign"
+                      },
+                      {
+                        "$ref": "#/components/schemas/Difficulty"
+                      },
+                      {
+                        "$ref": "#/components/schemas/Player"
+                      },
+                      {
+                        "$ref": "#/components/schemas/Submission"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid type."
+          }
+        }
+      }
+    },
+    "/verification-notice": {
+      "post": {
+        "tags": ["Verification Notice"],
+        "summary": "Create a verification notice",
+        "description": "Creates a notice for a pending submission. Requires Helper access; the authenticated helper is stored as the verifier.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerificationNoticeInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The created verification notice.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationNotice"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The submission is missing, does not exist, or has already been verified."
+          },
+          "401": {
+            "description": "Not logged in."
+          },
+          "403": {
+            "description": "Helper access is required."
+          },
+          "500": {
+            "description": "The verification notice could not be created."
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["Verification Notice"],
+        "summary": "Delete a verification notice",
+        "description": "Deletes a verification notice. Requires Helper access.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "The verification notice ID to delete."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The verification notice was deleted successfully."
+          },
+          "400": {
+            "description": "The notice ID is missing."
+          },
+          "401": {
+            "description": "Not logged in."
+          },
+          "403": {
+            "description": "Helper access is required."
+          },
+          "404": {
+            "description": "Verification notice not found."
+          },
+          "500": {
+            "description": "The verification notice could not be deleted."
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -5484,13 +6068,21 @@
       },
       "Submission": {
         "type": "object",
+        "description": "A player's submission, including verification state and expanded challenge/player relationships when returned by the API.",
         "properties": {
           "id": {
             "type": "integer",
             "description": "Unique identifier for the submission"
           },
           "challenge_id": {
-            "type": "integer",
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Identifier for the associated challenge"
           },
           "player_id": {
@@ -5498,8 +6090,15 @@
             "description": "Identifier for the player"
           },
           "date_created": {
-            "type": "string",
-            "format": "date-time",
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Timestamp of when the submission was created"
           },
           "is_fc": {
@@ -5512,15 +6111,38 @@
             "description": "URL to the proof of the submission"
           },
           "raw_session_url": {
-            "type": "string",
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "URL to the raw session video"
           },
           "player_notes": {
-            "type": "string",
+            "oneOf": [
+              {
+                "type": "string",
+                "maxLength": 5000
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Notes from the player about the submission"
           },
           "suggested_difficulty_id": {
-            "type": "integer",
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Identifier of the difficulty the player is suggesting for the challenge"
           },
           "is_personal": {
@@ -5529,25 +6151,420 @@
             "default": false
           },
           "is_verified": {
-            "type": "boolean",
-            "description": "Indicates if the submission is verified"
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Verification state: true for verified, false for rejected, or null for pending"
           },
           "date_verified": {
-            "type": "string",
-            "format": "date-time",
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Timestamp of when the submission was verified"
           },
           "verifier_notes": {
-            "type": "string",
+            "oneOf": [
+              {
+                "type": "string",
+                "maxLength": 5000
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Notes from the verifier about the submission"
           },
           "verifier_id": {
-            "type": "integer",
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Identifier for the verifier"
           },
           "new_challenge_id": {
-            "type": "integer",
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Identifier for the new challenge attached to this submission"
+          },
+          "time_taken": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Time taken in seconds"
+          },
+          "date_achieved": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Timestamp when the submission was achieved"
+          },
+          "frac": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional fractional difficulty value associated with a suggested difficulty"
+          },
+          "challenge": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Challenge"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Expanded challenge object"
+          },
+          "player": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Player"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Expanded submitting player"
+          },
+          "suggested_difficulty": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Difficulty"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Expanded suggested difficulty"
+          },
+          "verifier": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Player"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Expanded verifying player"
+          },
+          "new_challenge": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/NewChallenge"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Expanded new-challenge record when the submission is not attached to an existing challenge"
+          }
+        }
+      },
+      "SubmissionInput": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Submission"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "skip_webhook": {
+                "type": "boolean",
+                "description": "Skip verification webhooks during an update"
+              },
+              "like_challenge": {
+                "type": "boolean",
+                "description": "Like the challenge for the submitting player after creation"
+              },
+              "new_challenge": {
+                "$ref": "#/components/schemas/NewChallenge",
+                "description": "New challenge data used instead of challenge_id during creation"
+              }
+            }
+          }
+        ],
+        "description": "Submission create/update input. The server controls verification timestamps and linked player data."
+      },
+      "MassVerifyRequest": {
+        "type": "object",
+        "required": ["ids", "is_verified"],
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "IDs of pending submissions to update"
+          },
+          "is_verified": {
+            "type": "boolean",
+            "description": "Whether to verify or reject the submissions"
+          },
+          "verifier_notes": {
+            "oneOf": [
+              {
+                "type": "string",
+                "maxLength": 5000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional verifier note applied to the submissions"
+          }
+        }
+      },
+      "SubmissionQueueResponse": {
+        "type": "object",
+        "required": ["queue", "notices"],
+        "properties": {
+          "queue": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Submission"
+            },
+            "description": "Pending submissions ordered oldest first"
+          },
+          "notices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VerificationNotice"
+            }
+          }
+        }
+      },
+      "SubmissionQueueInspectResponse": {
+        "type": "object",
+        "required": ["notes", "related"],
+        "properties": {
+          "notes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VerifierNote"
+            }
+          },
+          "related": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Submission"
+            },
+            "description": "Other non-rejected submissions by the player on the same map"
+          }
+        }
+      },
+      "VerifierNote": {
+        "type": "object",
+        "required": ["date_verified", "verifier_notes", "is_verified", "count"],
+        "properties": {
+          "date_verified": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "verifier_notes": {
+            "type": "string"
+          },
+          "is_verified": {
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "count": {
+            "type": "integer"
+          }
+        }
+      },
+      "EverestDownloadLink": {
+        "type": "object",
+        "required": ["download_url"],
+        "properties": {
+          "download_url": {
+            "type": "string",
+            "description": "Everest one-click download URL for the latest GameBanana file."
+          }
+        }
+      },
+      "ModInfo": {
+        "type": "object",
+        "required": ["name", "author", "authorId"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "GameBanana mod or WIP name."
+          },
+          "author": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "GameBanana submitter name, when available."
+          },
+          "authorId": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "GameBanana submitter ID, when available."
+          }
+        }
+      },
+      "ReportInput": {
+        "type": "object",
+        "required": ["topic", "message"],
+        "properties": {
+          "topic": {
+            "type": "string",
+            "description": "Short report topic."
+          },
+          "message": {
+            "type": "string",
+            "description": "Report body."
+          },
+          "url": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional URL related to the report. Empty strings are treated as omitted."
+          }
+        }
+      },
+      "VerificationNoticeInput": {
+        "type": "object",
+        "required": ["submission_id"],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Ignored by the server; the notice ID is assigned by the database."
+          },
+          "verifier_id": {
+            "type": "integer",
+            "description": "Ignored by the server; the authenticated helper is stored as verifier."
+          },
+          "submission_id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "ID of the pending submission for which to create a notice."
+          },
+          "message": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional message shown to the submission owner."
+          }
+        }
+      },
+      "VerificationNotice": {
+        "type": "object",
+        "required": ["id", "verifier_id", "submission_id", "message", "verifier", "submission"],
+        "description": "A helper's message attached to a pending submission.",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "verifier_id": {
+            "type": "integer"
+          },
+          "submission_id": {
+            "type": "integer"
+          },
+          "message": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "verifier": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Player"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "submission": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Submission"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -5696,59 +6713,225 @@
           "description": {
             "type": "string",
             "description": "Description of the new challenge"
+          },
+          "collectibles": {
+            "oneOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "minItems": 5,
+                  "maxItems": 5
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Collectible entries for the new challenge"
+          },
+          "golden_changes": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Golden-change metadata for the new challenge"
           }
         }
       },
       "Suggestion": {
         "type": "object",
+        "description": "A general or challenge-linked suggestion with optional difficulty placement data and associated votes.",
         "properties": {
           "id": {
             "type": "integer",
             "description": "Unique identifier for the suggestion"
           },
           "author_id": {
-            "type": "integer",
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Identifier for the author (player)"
           },
           "challenge_id": {
-            "type": "integer",
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Identifier for the associated challenge"
           },
           "current_difficulty_id": {
-            "type": "integer",
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Identifier for the challenge difficulty at the time of creation"
           },
           "suggested_difficulty_id": {
-            "type": "integer",
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Identifier for the suggested difficulty"
           },
           "comment": {
-            "type": "string",
+            "oneOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Comment about the suggestion"
           },
           "is_verified": {
-            "type": "boolean",
-            "description": "Indicates if the suggestion is verified"
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Verification state: true for verified, false for rejected, or null for pending"
           },
           "date_created": {
             "type": "string",
             "format": "date-time",
             "description": "Timestamp when the suggestion was created"
           },
+          "date_verified": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Timestamp when the suggestion was verified"
+          },
           "is_accepted": {
-            "type": "boolean",
-            "description": "Indicates if the suggestion is accepted"
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Acceptance state: true for accepted, false for rejected, or null for undecided"
+          },
+          "date_accepted": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Timestamp when the suggestion was accepted or rejected"
+          },
+          "author": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Player"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Expanded suggestion author"
+          },
+          "challenge": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Challenge"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Expanded associated challenge"
+          },
+          "current_difficulty": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Difficulty"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Expanded current difficulty"
+          },
+          "suggested_difficulty": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Difficulty"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Expanded suggested difficulty"
           },
           "votes": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SuggestionVote"
-            }
+            "oneOf": [
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SuggestionVote"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Associated votes when fetched by an endpoint that loads related content"
           }
         }
       },
+      "SuggestionInput": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Suggestion"
+          }
+        ],
+        "description": "Suggestion create/update input. The server sets author and lifecycle timestamps."
+      },
       "SuggestionVote": {
         "type": "object",
+        "description": "A player's vote on a suggestion, with linked objects included when expanded.",
         "properties": {
           "id": {
             "type": "integer",
@@ -5768,8 +6951,81 @@
             "description": "Vote value"
           },
           "comment": {
-            "type": "string",
+            "oneOf": [
+              {
+                "type": "string",
+                "maxLength": 1500
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Comment about the vote"
+          },
+          "suggestion": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Suggestion"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Expanded suggestion"
+          },
+          "player": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Player"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Expanded voting player"
+          },
+          "submission": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Submission"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The player's verified submission for the suggested challenge, when one exists"
+          }
+        }
+      },
+      "SuggestionVoteInput": {
+        "type": "object",
+        "required": ["suggestion_id", "vote"],
+        "properties": {
+          "suggestion_id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Suggestion to vote on"
+          },
+          "player_id": {
+            "type": "integer",
+            "description": "Ignored; the server uses the authenticated player"
+          },
+          "vote": {
+            "type": "string",
+            "enum": ["+", "-", "i"],
+            "description": "Vote value"
+          },
+          "comment": {
+            "oneOf": [
+              {
+                "type": "string",
+                "maxLength": 1500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional explanation for the vote"
           }
         }
       },
@@ -6198,37 +7454,11 @@
       },
       "PaginatedSubmissions": {
         "type": "object",
+        "required": ["submissions", "max_count", "max_page", "page", "per_page"],
         "properties": {
           "max_count": {
             "type": "integer",
-            "description": "The total number of changes available"
-          },
-          "max_page": {
-            "type": "integer",
-            "description": "The total number of pages available"
-          },
-          "page": {
-            "type": "integer",
-            "description": "The current page number"
-          },
-          "per_page": {
-            "type": "integer",
-            "description": "The number of changes per page"
-          },
-          "submissions": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Submission"
-            }
-          }
-        }
-      },
-      "PaginatedSuggestions": {
-        "type": "object",
-        "properties": {
-          "max_count": {
-            "type": "integer",
-            "description": "The total number of submissions available"
+            "description": "The total number of submissions matching the filters"
           },
           "max_page": {
             "type": "integer",
@@ -6241,6 +7471,34 @@
           "per_page": {
             "type": "integer",
             "description": "The number of submissions per page"
+          },
+          "submissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Submission"
+            }
+          }
+        }
+      },
+      "PaginatedSuggestions": {
+        "type": "object",
+        "required": ["suggestions", "max_count", "max_page", "page", "per_page"],
+        "properties": {
+          "max_count": {
+            "type": "integer",
+            "description": "The total number of suggestions matching the filters"
+          },
+          "max_page": {
+            "type": "integer",
+            "description": "The total number of pages available"
+          },
+          "page": {
+            "type": "integer",
+            "description": "The current page number"
+          },
+          "per_page": {
+            "type": "integer",
+            "description": "The number of suggestions per page"
           },
           "suggestions": {
             "type": "array",
