@@ -5270,6 +5270,7 @@
       },
       "Badge": {
         "type": "object",
+        "description": "A badge definition, optionally carrying endpoint-specific award data.",
         "properties": {
           "id": {
             "type": "integer",
@@ -5303,20 +5304,33 @@
             "default": 0
           },
           "data": {
-            "type": "object",
-            "description": "Additional endpoint-specific data, including `date_awarded` when returned by `get-player-badges`",
-            "properties": {
-              "date_awarded": {
-                "type": "string",
-                "format": "date-time"
+            "oneOf": [
+              {
+                "type": "object",
+                "description": "Additional endpoint-specific data, including award metadata.",
+                "properties": {
+                  "badge_player_id": {
+                    "type": "integer"
+                  },
+                  "date_awarded": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "additionalProperties": true
+              },
+              {
+                "type": "array",
+                "maxItems": 0,
+                "description": "Empty when no endpoint-specific data is attached."
               }
-            },
-            "additionalProperties": true
+            ]
           }
         }
       },
       "BadgePlayer": {
         "type": "object",
+        "description": "A badge-player join record. Linked player and badge objects are present when the endpoint expands them.",
         "properties": {
           "id": {
             "type": "integer",
@@ -5336,10 +5350,24 @@
             "description": "Timestamp when the badge was awarded"
           },
           "player": {
-            "$ref": "#/components/schemas/Player"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Player"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "badge": {
-            "$ref": "#/components/schemas/Badge"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Badge"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -6002,8 +6030,40 @@
           }
         }
       },
+      "Logging": {
+        "type": "object",
+        "description": "A server log entry.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Unique identifier for the log entry"
+          },
+          "message": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string",
+            "enum": ["debug", "info", "warn", "error", "critical"]
+          },
+          "topic": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "Like": {
         "type": "object",
+        "description": "A player's challenge like, optionally carrying wishlist metadata and expanded challenge/player objects.",
         "properties": {
           "id": {
             "type": "integer",
@@ -6018,8 +6078,15 @@
             "description": "Identifier for the player who created the like"
           },
           "date_created": {
-            "type": "string",
-            "format": "date-time",
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Timestamp when the like was created"
           },
           "is_wishlist": {
@@ -6028,41 +6095,97 @@
             "default": false
           },
           "state": {
-            "type": "string",
-            "enum": ["current", "on_hold", "soon", "backlog"],
+            "oneOf": [
+              {
+                "type": "string",
+                "enum": ["current", "on_hold", "soon", "backlog"]
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Wishlist state, only when `is_wishlist` is true"
           },
           "progress": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 100,
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Wishlist progress percentage"
           },
           "comment": {
-            "type": "string",
-            "maxLength": 1000,
+            "oneOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Wishlist comment"
           },
           "date_updated": {
-            "type": "string",
-            "format": "date-time",
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Timestamp when wishlist data was last updated"
           },
           "time_taken": {
-            "type": "integer",
-            "minimum": 0,
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Time taken for the wishlist entry"
           },
           "low_death": {
-            "type": "integer",
-            "minimum": 0,
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Lowest death count for the wishlist entry"
           },
           "challenge": {
-            "$ref": "#/components/schemas/Challenge"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Challenge"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "player": {
-            "$ref": "#/components/schemas/Player"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Player"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -6706,12 +6829,25 @@
             "description": "GameBanana URL of the new challenge"
           },
           "name": {
-            "type": "string",
-            "maxLength": 128,
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Map name of the new challenge"
           },
           "description": {
-            "type": "string",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Description of the new challenge"
           },
           "collectibles": {
@@ -7209,6 +7345,29 @@
           "per_page": {
             "type": "integer",
             "description": "Number of posts requested per page"
+          }
+        }
+      },
+      "Session": {
+        "type": "object",
+        "description": "An active account session. Session tokens are sensitive and normally used internally.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Unique identifier for the session"
+          },
+          "token": {
+            "type": "string",
+            "description": "Session token"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Session creation timestamp"
+          },
+          "account_id": {
+            "type": "integer",
+            "description": "Identifier of the associated account"
           }
         }
       },
