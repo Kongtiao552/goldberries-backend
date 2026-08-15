@@ -272,12 +272,6 @@ function get_role_name($role)
   }
 }
 
-function helper_can_delete($date_time)
-{
-  //Can only delete objects that are less than 24 hours old
-  return $date_time->getTimestamp() > time() - 86400;
-}
-
 function is_suspended($account = null)
 {
   $account = $account ?? get_user_data();

@@ -375,10 +375,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
   //Trying to delete submission for another player
   if ($submission->player_id !== $account->player->id) {
     check_role($account, $HELPER);
-    //If the account is a helper, they can only delete objects that were created within the last 24 hours
-    if ($account->role === $HELPER && !helper_can_delete($submission->date_created)) {
-      die_json(403, "You can only delete submissions that were created within the last 24 hours");
-    }
   }
 
   if ($submission->id === 46033) { //The golden challenge

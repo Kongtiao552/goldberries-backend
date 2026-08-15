@@ -130,11 +130,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
     die_json(404, "Campaign not found");
   }
 
-  //If the account is a helper, they can only delete objects that were created within the last 24 hours
-  if ($account->role === $HELPER && !helper_can_delete($campaign->date_added)) {
-    die_json(403, "You can only delete campaigns that were created within the last 24 hours");
-  }
-
   if ($campaign->delete($DB)) {
     log_info("'{$account->player->name}' deleted {$campaign}", "Campaign");
     submission_embed_change($campaign->id, "campaign"); //Delete all embeds referencing this campaign
