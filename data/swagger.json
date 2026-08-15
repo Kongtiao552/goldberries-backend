@@ -3901,7 +3901,7 @@
       "delete": {
         "tags": ["Post"],
         "summary": "Delete a post",
-        "description": "Deletes a post. News Writers and Helpers may delete only posts created within the last 24 hours; changelog posts require Admin access. API-key authentication is rejected for this operation.",
+        "description": "Deletes a post. Changelog posts require Admin access. API-key authentication is rejected for this operation.",
         "parameters": [
           {
             "name": "id",
@@ -5694,69 +5694,153 @@
             "description": "Name of the campaign"
           },
           "url": {
-            "type": "string",
-            "format": "uri",
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "URL of the campaign"
           },
           "date_added": {
-            "type": "string",
-            "format": "date-time",
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Timestamp when the campaign was added"
           },
           "icon_url": {
-            "type": "string",
-            "format": "uri",
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "URL of the campaign icon"
           },
           "sort_major_name": {
-            "type": "string",
-            "maxLength": 32,
+            "oneOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Major sort category name"
           },
           "sort_major_labels": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
+            "oneOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Labels for the major sort category"
           },
           "sort_major_colors": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
+            "oneOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Colors for the major sort category"
           },
           "sort_minor_name": {
-            "type": "string",
-            "maxLength": 32,
+            "oneOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Minor sort category name"
           },
           "sort_minor_labels": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
+            "oneOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Labels for the minor sort category"
           },
           "sort_minor_colors": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
+            "oneOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Colors for the minor sort category"
           },
           "author_gb_id": {
-            "type": "integer",
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "ID of the author on GameBanana"
           },
           "author_gb_name": {
-            "type": "string",
-            "maxLength": 128,
+            "oneOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Name of the author on GameBanana"
           },
           "note": {
-            "type": "string",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Internal note associated with the campaign"
           },
           "maps": {
@@ -5809,8 +5893,15 @@
             "description": "Map URL entries, each containing a URL and its label."
           },
           "date_added": {
-            "type": "string",
-            "format": "date-time",
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Timestamp when the map was added"
           },
           "is_archived": {
@@ -5819,28 +5910,70 @@
             "default": false
           },
           "sort_major": {
-            "type": "integer",
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Major sort order"
           },
           "sort_minor": {
-            "type": "integer",
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Minor sort order"
           },
           "sort_order": {
-            "type": "integer",
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Sort order"
           },
           "author_gb_id": {
-            "type": "integer",
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "ID of the author on GameBanana"
           },
           "author_gb_name": {
-            "type": "string",
-            "maxLength": 128,
+            "oneOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Name of the author on GameBanana"
           },
           "note": {
-            "type": "string",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Internal note associated with the map."
           },
           "collectibles": {
@@ -5863,7 +5996,14 @@
             "description": "Collectible entries, each containing five string values. Empty entries are omitted."
           },
           "golden_changes": {
-            "type": "string",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Golden-change metadata associated with the map."
           },
           "is_progress": {
@@ -5872,11 +6012,25 @@
             "description": "Whether the map is part of the progression list."
           },
           "bin": {
-            "type": "string",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Path of the map's `.bin` file."
           },
           "counts_for_id": {
-            "type": "integer",
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "ID of the map whose clears this map counts toward."
           },
           "campaign": {
@@ -5901,11 +6055,25 @@
             "description": "Unique identifier for the challenge"
           },
           "campaign_id": {
-            "type": "integer",
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Identifier for the associated campaign"
           },
           "map_id": {
-            "type": "integer",
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Identifier for the associated map"
           },
           "objective_id": {
@@ -5913,11 +6081,25 @@
             "description": "Identifier for the associated objective"
           },
           "label": {
-            "type": "string",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Label for the challenge"
           },
           "description": {
-            "type": "string",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Description of the challenge"
           },
           "difficulty_id": {
@@ -5925,8 +6107,15 @@
             "description": "Identifier for the difficulty level"
           },
           "date_created": {
-            "type": "string",
-            "format": "date-time",
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Timestamp when the challenge was created"
           },
           "requires_fc": {
@@ -5940,16 +6129,37 @@
             "default": false
           },
           "is_arbitrary": {
-            "type": "boolean",
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Indicates if the challenge is arbitrary"
           },
           "sort": {
-            "type": "integer",
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Sort order of the challenge"
           },
           "icon_url": {
-            "type": "string",
-            "format": "uri",
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Optional challenge-specific icon URL"
           },
           "is_rejected": {
@@ -5958,7 +6168,14 @@
             "default": false
           },
           "reject_note": {
-            "type": "string",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Reason for rejecting the challenge"
           },
           "likes": {
@@ -6078,15 +6295,8 @@
             "description": "Identifier for the player who created the like"
           },
           "date_created": {
-            "oneOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "date-time",
             "description": "Timestamp when the like was created"
           },
           "is_wishlist": {
@@ -6227,6 +6437,11 @@
           "is_fc": {
             "type": "boolean",
             "description": "Indicates if the submission is a full clear",
+            "default": false
+          },
+          "is_obsolete": {
+            "type": "boolean",
+            "description": "Indicates if the submission has been superseded",
             "default": false
           },
           "proof_url": {
@@ -6714,34 +6929,83 @@
                 "description": "Whether the player is suspended"
               },
               "suspension_reason": {
-                "type": "string",
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
                 "description": "Reason for suspension, if applicable"
               },
               "name_color_start": {
-                "type": "string",
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
                 "description": "Starting color code for the player's name"
               },
               "name_color_end": {
-                "type": "string",
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
                 "description": "Ending color code for the player's name"
               },
               "links": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                },
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
                 "description": "User-defined profile links; included when customization is requested."
               },
               "input_method": {
-                "type": "string",
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
                 "description": "Input method used by the player; included when customization is requested."
               },
               "about_me": {
-                "type": "string",
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
                 "description": "Player profile description; included when customization is requested."
               },
               "country": {
-                "type": "string",
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
                 "description": "Player account country code; included when customization is requested."
               }
             }
@@ -6777,8 +7041,15 @@
             "description": "Description of the objective"
           },
           "display_name_suffix": {
-            "type": "string",
-            "maxLength": 32,
+            "oneOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Suffix to display with the name"
           },
           "is_arbitrary": {
@@ -6787,8 +7058,15 @@
             "default": false
           },
           "icon_url": {
-            "type": "string",
-            "format": "uri",
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "URL of the objective icon"
           }
         }
@@ -6806,8 +7084,15 @@
             "description": "Name of the difficulty level"
           },
           "subtier": {
-            "type": "string",
-            "enum": ["high", "mid", "low", "guard"],
+            "oneOf": [
+              {
+                "type": "string",
+                "enum": ["high", "mid", "low", "guard"]
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Subtier of the difficulty level"
           },
           "sort": {
@@ -7173,23 +7458,58 @@
             "description": "Unique identifier for the change"
           },
           "campaign_id": {
-            "type": "integer",
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Identifier for the associated campaign"
           },
           "map_id": {
-            "type": "integer",
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Identifier for the associated map"
           },
           "challenge_id": {
-            "type": "integer",
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Identifier for the associated challenge"
           },
           "player_id": {
-            "type": "integer",
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Identifier for the player"
           },
           "author_id": {
-            "type": "integer",
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Identifier for the author"
           },
           "description": {
