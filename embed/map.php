@@ -40,7 +40,7 @@ if (count($map->challenges) > 0) {
         $count_submissions++;
       }
     }
-    $tier_name = $challenge->difficulty->to_tier_name();
+    $tier_name = $challenge->difficulty->name;
     $submission_label = $count_submissions === 1 ? "submission" : "submissions";
     $description_str .= "  - {$challenge_str} ({$tier_name}): {$count_submissions} {$submission_label}\n";
   }

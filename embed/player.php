@@ -36,7 +36,7 @@ for ($i = 0; $i < count($submissions); $i++) {
   $submission = Submission::get_by_id($DB, $submission_data["id"]);
   $submission->expand_foreign_keys($DB, 5);
   $challenge_name = $submission->challenge->get_name(true);
-  $tier_name = $submission->challenge->difficulty->to_tier_name();
+  $tier_name = $submission->challenge->difficulty->name;
   $description_str .= "  - ({$tier_name}) {$challenge_name}\n";
 
   if ($i >= 2) {

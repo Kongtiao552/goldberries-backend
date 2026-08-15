@@ -35,8 +35,8 @@ $title_str = "";
 if ($challenge !== null) {
   $title_str = "Suggestion: '" . $challenge->get_name(true) . "'";
   if ($suggestion->suggested_difficulty_id !== null) {
-    $to_str = $suggestion->suggested_difficulty->to_tier_name();
-    $from_str = $suggestion->current_difficulty->to_tier_name();
+    $to_str = $suggestion->suggested_difficulty->name;
+    $from_str = $suggestion->current_difficulty->name;
     $description_str .= "Placement: " . $from_str . " → " . $to_str . "\n";
   }
 } else {

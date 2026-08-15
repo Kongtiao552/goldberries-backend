@@ -374,7 +374,7 @@ class Challenge extends DbObject
     if ($old->difficulty_id !== $new->difficulty_id) {
       $oldDifficulty = Difficulty::get_by_id($DB, $old->difficulty_id);
       $newDifficulty = Difficulty::get_by_id($DB, $new->difficulty_id);
-      Change::create_change($DB, 'challenge', $new->id, "Moved from '{$oldDifficulty->to_tier_name()}' to '{$newDifficulty->to_tier_name()}'");
+      Change::create_change($DB, 'challenge', $new->id, "Moved from '{$oldDifficulty->name}' to '{$newDifficulty->name}'");
     }
     if ($old->label !== $new->label) {
       Change::create_change($DB, 'challenge', $new->id, "Changed label from '{$old->label}' to '{$new->label}'");

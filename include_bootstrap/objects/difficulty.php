@@ -5,7 +5,6 @@ class Difficulty extends DbObject
   public static string $table_name = 'difficulty';
 
   public string $name;
-  public ?string $subtier = null;
   public int $sort;
 
   #region Abstract Functions
@@ -13,7 +12,6 @@ class Difficulty extends DbObject
   {
     return array(
       'name' => $this->name,
-      'subtier' => $this->subtier,
       'sort' => $this->sort,
     );
   }
@@ -21,7 +19,6 @@ class Difficulty extends DbObject
   {
     return [
       'name',
-      'subtier',
       'sort',
     ];
   }
@@ -32,9 +29,6 @@ class Difficulty extends DbObject
     $this->id = intval($arr[$prefix . 'id']);
     $this->name = $arr[$prefix . 'name'];
     $this->sort = intval($arr[$prefix . 'sort']);
-
-    if (isset($arr[$prefix . 'subtier']))
-      $this->subtier = $arr[$prefix . 'subtier'];
   }
 
   protected function do_expand_foreign_keys($DB, $depth, $expand_structure)
@@ -57,18 +51,8 @@ class Difficulty extends DbObject
   #region Utility Functions
   function __toString()
   {
-    $subtierStr = to_string_null_check($this->subtier);
-    return "(Difficulty, id:{$this->id}, name:'{$this->name}', subtier:'{$subtierStr}')";
+    return "(Difficulty, id:{$this->id}, name:'{$this->name}')";
   }
 
-  function to_tier_name()
-  {
-    if ($this->subtier) {
-      //Uppercase the first letter of subtier
-      return ucfirst($this->subtier) . " " . $this->name;
-    } else {
-      return $this->name;
-    }
-  }
   #endregion
 }

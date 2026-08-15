@@ -7083,18 +7083,6 @@
             "maxLength": 32,
             "description": "Name of the difficulty level"
           },
-          "subtier": {
-            "oneOf": [
-              {
-                "type": "string",
-                "enum": ["high", "mid", "low", "guard"]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Subtier of the difficulty level"
-          },
           "sort": {
             "type": "integer",
             "description": "Sort order of the difficulty level"
