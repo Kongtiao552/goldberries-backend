@@ -58,8 +58,8 @@ function send_webhook_suggestion_verified($suggestion)
       $objective .= " [" . $challenge->get_suffix() . "]";
     }
 
-    $current_diff_name = $challenge->difficulty->to_tier_name();
-    $suggested_diff_name = $suggestion->suggested_difficulty->to_tier_name();
+    $current_diff_name = $challenge->difficulty->name;
+    $suggested_diff_name = $suggestion->suggested_difficulty->name;
 
     $fields[] = [
       "name" => "Placement",
@@ -108,7 +108,7 @@ function send_webhook_suggestion_verified($suggestion)
 
     $difficulties_str_arr = [];
     foreach ($difficulties as $diff) {
-      $diff_name = $diff["difficulty"]->to_tier_name();
+      $diff_name = $diff["difficulty"]->name;
       $diff_count = $diff["count"];
       $diff_percent = round($diff_count / $count_suggestions * 100, 1);
       $difficulties_str_arr[] = "$diff_name: $diff_count ($diff_percent%)";
@@ -116,7 +116,7 @@ function send_webhook_suggestion_verified($suggestion)
     $difficulties_str = implode(", ", $difficulties_str_arr);
 
     $fields[] = [
-      "name" => "Difficulty Suggestions ({$count_suggestions}/{$count_submissions} submissions)",
+      "name" => "Difficulty Opinions ({$count_suggestions}/{$count_submissions} submissions)",
       "value" => "$difficulties_str",
       "inline" => false
     ];
@@ -262,7 +262,7 @@ function send_webhook_submission_verified($submission)
   $emote = $is_rejected ? ":x:" : ":white_check_mark:";
   $verified_str = $is_rejected ? "rejected" : "verified";
 
-  $tier_name = $submission->challenge->difficulty->to_tier_name();
+  $tier_name = $submission->challenge->difficulty->name;
 
   if ($submission->verifier_notes !== null) {
     $message = "$emote $player_name → Your [submission](<{$submission_url}>) for {$challenge_name} ($tier_name) was $verified_str with a note! :notepad_spiral: `{$submission->verifier_notes}`";
@@ -407,7 +407,7 @@ function send_webhook_first_clear_verified($submission)
 
   $challenge_name = $submission->get_challenge_name_for_discord();
   $submission_url = $submission->get_url();
-  $tier_name = $difficulty->to_tier_name();
+  $tier_name = $difficulty->name;
 
   $message = ":white_check_mark: $player_name → [First clear](<{$submission_url}>) on {$challenge_name} ($tier_name)!";
 
@@ -425,7 +425,7 @@ function send_webhook_challenge_n_subs_verified($challenge, $n)
 
   $challenge_name = $challenge->get_name_for_discord();
   $difficulty = $challenge->difficulty;
-  $tier_name = $difficulty->to_tier_name();
+  $tier_name = $difficulty->name;
 
   $message = ":trophy: {$challenge_name} ($tier_name) has reached **$n** clears!";
 
@@ -487,11 +487,11 @@ function send_webhook_challenge_moved($challenge, $new_difficulty_id)
   }
   $webhook_url = constant('CHANGELOG_WEBHOOK_URL');
   $challenge_name = $challenge->get_name_for_discord();
-  $old_difficulty = $challenge->difficulty->to_tier_name();
+  $old_difficulty = $challenge->difficulty->name;
   $old_sort = $challenge->difficulty->sort;
   $old_id = $challenge->difficulty_id;
   $new_difficulty_obj = Difficulty::get_by_id($DB, $new_difficulty_id);
-  $new_difficulty = $new_difficulty_obj->to_tier_name();
+  $new_difficulty = $new_difficulty_obj->name;
   $new_sort = $new_difficulty_obj->sort;
 
   $ping_list = [];
@@ -575,7 +575,7 @@ function clean_post_content($content)
     global $DB;
     $difficulty = Difficulty::get_by_id($DB, $matches[1]);
     if ($difficulty !== false) {
-      return $difficulty->to_tier_name();
+      return $difficulty->name;
     }
     return "(Unknown Difficulty)";
   }, $content);
@@ -632,7 +632,7 @@ function webhook_check_high_time_taken($submission)
   if ($submission->is_verified !== true) {
     return;
   }
-  if ($submission->time_taken === null || $submission->time_taken < 684000) {
+  if ($submission->time_taken === null || $submission->time_taken < 648000) {
     return;
   }
 

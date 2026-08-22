@@ -274,11 +274,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
     die_json(404, "Challenge not found");
   }
 
-  //If the account is a helper, they can only delete objects that were created within the last 24 hours
-  if ($account->role === $HELPER && !helper_can_delete($challenge->date_created)) {
-    die_json(403, "You can only delete challenges that were created within the last 24 hours");
-  }
-
   if ($challenge->delete($DB)) {
     log_info("'{$account->player->name}' deleted {$challenge}", "Challenge");
     submission_embed_change($challenge->id, "challenge");

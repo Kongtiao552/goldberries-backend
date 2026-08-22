@@ -31,7 +31,7 @@ $title_str = "Challenge: " . $challenge->get_name(true);
 $description_str = "";
 $campaign_str = $challenge->get_campaign()->get_name();
 // $description_str .= "For Campaign: " . $campaign_str . "\n\n";
-$description_str .= "Difficulty: " . $challenge->difficulty->to_tier_name() . "\n";
+$description_str .= "Difficulty: " . $challenge->difficulty->name . "\n";
 
 $count_submissions = 0;
 foreach ($challenge->submissions as $submission) {

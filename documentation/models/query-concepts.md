@@ -7,7 +7,7 @@ These are some queries for concepts that don't yet exist on goldberries.net
 ```
 SELECT
   account.input_method,
-  difficulty.name AS diff_name, difficulty.subtier AS diff_subtier,
+  difficulty.name AS diff_name,
   COUNT(*) AS submission_count
 FROM submission
 JOIN challenge ON submission.challenge_id = challenge.id

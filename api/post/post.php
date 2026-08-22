@@ -101,11 +101,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
     die_json(404, "Post not found");
   }
 
-  //If the account is a helper, they can only delete objects that were created within the last 24 hours
-  if (($account->role === $HELPER || $account->role === $NEWS_WRITER) && !helper_can_delete($post->date_created)) {
-    die_json(403, "You can only delete posts that were created within the last 24 hours");
-  }
-
   if ($post->type === "changelog" && !is_admin($account)) {
     die_json(403, "Only admins can delete changelog posts");
   }

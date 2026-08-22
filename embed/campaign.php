@@ -48,7 +48,7 @@ if ($count_maps > 1 && $count_maps <= 5) {
         $easiest_challenge = $challenge;
       }
     }
-    $tier_name = $easiest_challenge->difficulty->to_tier_name();
+    $tier_name = $easiest_challenge->difficulty->name;
     $description_str .= "  - {$map_str} ({$tier_name})\n";
   }
   //Remove last newline

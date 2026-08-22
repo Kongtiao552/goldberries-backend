@@ -115,11 +115,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
     die_json(404, "Map not found");
   }
 
-  //If the account is a helper, they can only delete objects that were created within the last 24 hours
-  if ($account->role === $HELPER && !helper_can_delete($map->date_added)) {
-    die_json(403, "You can only delete maps that were created within the last 24 hours");
-  }
-
   if ($map->delete($DB)) {
     log_info("'{$account->player->name}' deleted {$map}", "Map");
     submission_embed_change($map->id, "map"); //Delete all embeds referencing this map

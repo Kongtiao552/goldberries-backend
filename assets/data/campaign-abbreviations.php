@@ -46,16 +46,20 @@ $CAMPAIGN_ABBREVIATIONS = [
     "id" => 614,
   ],
   [
-    "abbreviation" => ["ssc", "ssc1"],
+    "abbreviation" => ["ssc", "ssc1", "ssc2022", "ssc22"],
     "id" => 1142,
   ],
   [
-    "abbreviation" => ["ssc", "ssc2"],
+    "abbreviation" => ["ssc", "ssc2", "ssc2023", "ssc23"],
     "id" => 1201,
   ],
   [
-    "abbreviation" => ["ssc", "ssc3"],
+    "abbreviation" => ["ssc", "ssc3", "ssc2024", "ssc24"],
     "id" => 1216,
+  ],
+  [
+    "abbreviation" => ["ssc", "ssc4", "ssc2026", "ssc26"],
+    "id" => 3803,
   ],
   [
     "abbreviation" => ["flp"],
@@ -190,7 +194,23 @@ $CAMPAIGN_ABBREVIATIONS = [
     "id" => 1433,
   ],
   [
-    "abbreviation" => ["cbp", "cbdp", "ocbdp"],
+    "abbreviation" => ["cbp", "cbdp", "ocbdp", "opcore"],
     "id" => 3361,
   ],
+  [
+    "abbreviation" => ["emldss"],
+     "id" => 2954,
+  ],
+  [
+    "abbreviation" => ["ntmc"],
+     "id" => 3202,
+  ],
+  [
+    "abbreviation" => ["td"],
+     "id" => 1557,
+  ],
+  [
+    "abbreviation" => ["advicks"],
+     "id" => 2804,
+  ]
 ];
