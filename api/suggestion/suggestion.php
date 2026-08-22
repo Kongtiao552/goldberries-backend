@@ -167,7 +167,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
   if ($suggestion === false) {
     die_json(404, "Suggestion not found");
   }
-  if (!is_verifier($account)) {
+  if (!is_helper($account)) {
     if ($suggestion->author_id !== $account->player_id) {
       die_json(403, "You can only delete your own suggestions");
     }
